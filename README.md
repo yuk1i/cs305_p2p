@@ -10,4 +10,11 @@ Notes
 
 4. BitTorrent Upload Order?
 
+### Questions
+
+1. how to make this p2p concurrency?
+
+2. MTU?
+
+
 
