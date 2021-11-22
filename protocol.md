@@ -20,9 +20,9 @@ There are some types of protocol we need to design:
 
 ### Torrent file
 
-A torrent file in this P2P application is a json file that describes folder structures, file name, file hash and hash of every partition.
+A torrent file is a json file that describes folder structures, file name, file hash and hash of every partition.
 
-Torrent Metadata is the field `torrent_hash`.
+The Torrent Metadata is the field `torrent_hash`.
 
 ```json
 {
