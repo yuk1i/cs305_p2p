@@ -40,6 +40,7 @@ The Torrent Metadata is the field `torrent_hash`.
 				// Every parts excluiding the last one must be the same, must be empty for a folder
 				{
 					// A part object
+					"seq"  : "integer, globally sequence number",
 					"size" : "integer, size of current partition in bytes, should be 4096",
 					"hash" : "SHA256 of this partition"
 				}
