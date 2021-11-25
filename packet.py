@@ -104,7 +104,7 @@ class BasePacket:
         writer = self.get_writer()
         writer.write_byte(self.type)
         writer.write_byte(self.reversed & MASK_REVERSED)
-        writer.write_byte(self.identifier)
+        writer.write_short(self.identifier)
         if self.reassemble.enabled:
             writer.data[1] = writer.data[1] | FLAG_REASSEMBLE
             writer.write_int(self.reassemble.start)
@@ -140,6 +140,7 @@ class NotifyPacket(BasePacket):
         return writer.data
 
     def unpack(self, data: bytes) -> BasePacket:
+        self.set_data(data)
         r = self.unpack_header()
         self.uuid = r.read_long()
         self.ipv4_address = r.read_int()
