@@ -29,7 +29,7 @@ def hash_file(file_path: str) -> str:
 
 def hash_json_object(json_obj: dict) -> str:
     json_str = json.dumps(json_obj, sort_keys=True)
-    print(json_str)
+    # print(json_str)
     return hash_str(json_str)
 
 

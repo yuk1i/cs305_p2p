@@ -70,13 +70,15 @@ class Torrent(MyDict):
         self.torrent_hash: str = ""
         self.block_size: int = 4096
         self.files: List[FileObject] = list()
+        self.__file_index__ = list()
+        self.__block_index__ = list()
 
     def check_torrent_hash(self) -> bool:
         current_hash = copy.deepcopy(self.torrent_hash)
         self.torrent_hash = ""
-        print("old hash: %s" % current_hash)
+        # print("old hash: %s" % current_hash)
         new_hash = hash_utils.hash_json_object(self)
-        print("old hash: %s, new hash: %s" % (current_hash, new_hash))
+        # print("old hash: %s, new hash: %s" % (current_hash, new_hash))
         self.torrent_hash = current_hash
         return current_hash == new_hash
 
@@ -85,9 +87,32 @@ class Torrent(MyDict):
         self.torrent_hash = hash_utils.hash_json_object(self)
         return self.torrent_hash
 
+    def save_to_file(self, file_path: str) -> None:
+        with open(file_path, "w") as f:
+            f.write(json.dumps(self))
+
     @staticmethod
     def load_from_file(file_path: str) -> Torrent:
-        pass
+        t = Torrent()
+        with open(file_path, "r") as f:
+            j = json.load(f)
+        t.name = j["name"]
+        t.torrent_hash = j["torrent_hash"]
+        t.block_size = int(j["block_size"])
+        for ff in j["files"]:
+            f = FileObject(int(ff["seq"]), ff["name"], ff["dir"])
+            f.size = int(ff["size"])
+            f.hash = ff["hash"]
+            for bb in ff["blocks"]:
+                b = BlockObject()
+                b.seq = int(bb["seq"])
+                b.size = int(bb["size"])
+                b.hash = bb["hash"]
+                f.blocks.append(b)
+            t.files.append(f)
+        if not t.check_torrent_hash():
+            raise AssertionError("Corrupt Torrent, hash mismatched")
+        return t
 
     @staticmethod
     def generate_torrent(path: str, name: str, block_size: int = 4096) -> Torrent:
@@ -127,19 +152,3 @@ class Torrent(MyDict):
 
     def get_file(self, seq_number: int) -> FileObject:
         pass
-
-
-if __name__ == '__main__':
-    # fo = FileObject(1, "test", "test_dir")
-    # print(fo)
-    # print(json.dumps(fo))
-    # print(hash_json_object(fo))
-    # t = Torrent()
-    # t.name = "114514"
-    # t.generate_hash()
-    # print(t.check_torrent_hash())
-
-    tt = Torrent.generate_torrent("tests/test_torrent", "A Test Torrent")
-
-    pprint.pprint(tt)
-    print(tt.check_torrent_hash())
