@@ -104,8 +104,6 @@ Types of Message:
 - The Reserved for ACK Message should be the type of the corresponding Request Message
 - The Identifier should be equal to the corresponding Request Message
 
-### Packet Format
-
 ### General ideas
 
 #### Packet Header
@@ -156,6 +154,8 @@ Total Length: Total bytes
 We don't consider packet loss here. only packet out-of-order is considered.
 
 So we don't need to send packet to ASK lost fragment, only re-assembled is needed.
+
+### Packet Format
 
 #### Notify 0x05
 
@@ -428,34 +428,22 @@ Ask Peer which chunks it has
 |                                                               |
 +-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+
 
-
 #### ACK Request chunk info 0x31
 
-0x20:8,0x31:8,Identifier:16,Torrent Hash:256,count:32,Seq ID:32,...:32
+Re-assemble Header enabled
+
+0x20:8,0x31:8,Identifier:16,Re-assemble Header:96,Seq ID:32,...:32
 
  0                   1                   2                   3  
  0 1 2 3 4 5 6 7 8 9 0 1 2 3 4 5 6 7 8 9 0 1 2 3 4 5 6 7 8 9 0 1
 +-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+
-|     
-0x20     |      0x31     |           Identifier          |
+|      0x20     |      0x31     |           Identifier          |
 +-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+
 |                                                               |
 +                                                               +
-|                                                               |
+|                       Re-assemble Header                      |
 +                                                               +
 |                                                               |
-+                                                               +
-|                                                               |
-+                          Torrent Hash                         +
-|                                                               |
-+                                                               +
-|                                                               |
-+                                                               +
-|                                                               |
-+                                                               +
-|                                                               |
-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+
-|                             count                             |
 +-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+
 |                             Seq ID                            |
 +-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+
@@ -490,11 +478,59 @@ both start and end are included, Seq ID Start <= id <= Seq ID End
 
 - When R Flag and F Flag are both set, two "Seq ID"s should be interpreted as a range of continuous file seq id
 
-
 #### Request Chunk 0x32
 
 Ask chunk data
 
-0x32:8,1:1,Reserved:7,Identifier:16,Torrent Hash:256,Start Byte:32,Expected End Byte:32,
+0x32:8,Reserved:8,Identifier:16,Torrent Hash:256,Chunk SeqID:32,Start Byte:32,Expected End Byte:32
 
+ 0                   1                   2                   3  
+ 0 1 2 3 4 5 6 7 8 9 0 1 2 3 4 5 6 7 8 9 0 1 2 3 4 5 6 7 8 9 0 1
++-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+
+|      0x32     |    Reserved   |           Identifier          |
++-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+
+|                                                               |
++                                                               +
+|                                                               |
++                                                               +
+|                                                               |
++                                                               +
+|                                                               |
++                          Torrent Hash                         +
+|                                                               |
++                                                               +
+|                                                               |
++                                                               +
+|                                                               |
++                                                               +
+|                                                               |
++-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+
+|                          Chunk SeqID                          |
++-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+
+|                           Start Byte                          |
++-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+
+|                       Expected End Byte                       |
++-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+
+
+#### ACK for Request Chunk 0x32
+
+Re-assemble Header enabled
+
+0x20:8,1:1,S:1,0x32:6,Identifier:16,Re-assemble Header:96,data(variable length):64
+
+ 0                   1                   2                   3  
+ 0 1 2 3 4 5 6 7 8 9 0 1 2 3 4 5 6 7 8 9 0 1 2 3 4 5 6 7 8 9 0 1
++-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+
+|      0x20     |1|S|    0x32   |           Identifier          |
++-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+
+|                                                               |
++                                                               +
+|                       Re-assemble Header                      |
++                                                               +
+|                                                               |
++-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+
+|                                                               |
++                     data(variable length)                     +
+|                                                               |
++-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+
 
