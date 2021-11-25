@@ -24,10 +24,11 @@ The Torrent Metadata is the field `torrent_hash`.
 
 ```json
 {
-  "name": "The name of torrent file",
+  "name": "The name of this torrent",
   "torrent_hash": "The hash of current json object, with this field empty",
+  "block_size" : "integer, indicates the block size",
   "files": [
-    // A json array of file object, order guaranteed in RFC 7159
+    // A json array of file object, order guaranteed but not important
     {
       // A file object
       "name": "The name of this file",
