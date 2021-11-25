@@ -10,6 +10,14 @@ def int_to_bytes(value: int, length: int) -> bytes:
     return int.to_bytes(value, length, byteorder="big", signed=False)
 
 
+def hexstr_to_bytes(hex: str) -> bytes:
+    return bytes.fromhex(hex)
+
+
+def bytes_to_hexstr(b: bytes) -> str:
+    return b.hex()
+
+
 def random_byte() -> bytes:
     return random.randbytes(1)
 
@@ -86,3 +94,6 @@ class ByteReader:
         ret = self.data[self.cursor:self.cursor + _len]
         self.cursor += _len
         return ret
+
+    def remain(self) -> int:
+        return len(self.data) - self.cursor

@@ -1,3 +1,5 @@
+from typing import List
+
 from packet.base_packet import *
 from utils.bytes_utils import ByteWriter, ByteReader
 
@@ -21,8 +23,8 @@ class NotifyPacket(BasePacket):
 
 
 class ACKNotifyPacket(ACKPacket):
-    def __init__(self, request: BasePacket):
-        super(ACKNotifyPacket, self).__init__(request)
+    def __init__(self):
+        super(ACKNotifyPacket, self).__init__()
         self.uuid: int = 0
 
     def __pack_internal__(self, w: ByteWriter):
@@ -48,11 +50,54 @@ class RegisterPacket(BasePacket):
 
 
 class ACKRegisterPacket(ACKPacket):
-    def __init__(self, request: BasePacket):
-        super(ACKRegisterPacket, self).__init__(request)
+    def __init__(self):
+        super(ACKRegisterPacket, self).__init__()
 
     def __pack_internal__(self, w: ByteWriter):
         pass
 
     def __unpack_internal__(self, r: ByteReader):
         pass
+
+
+class RequestPeer(BasePacket):
+    def __init__(self):
+        super(RequestPeer, self).__init__(TYPE_REQUEST_PEERS)
+        self.torrent_hash: bytes = b''
+
+    def __pack_internal__(self, w: ByteWriter):
+        w.write_bytes(self.torrent_hash)
+
+    def __unpack_internal__(self, r: ByteReader):
+        self.torrent_hash = r.read_bytes(32)
+
+
+class TupleAddressAndPort(Serializable):
+    def __init__(self, ipv4: int = 0, port: int = 0):
+        self.ipv4: int = ipv4
+        self.port: int = port
+
+    def __pack_internal__(self, w: ByteWriter):
+        w.write_int(self.ipv4)
+        w.write_short(self.port)
+
+    def __unpack_internal__(self, r: ByteReader):
+        self.ipv4 = r.read_int()
+        self.port = r.read_int()
+
+
+class ACKRequestPeer(ACKPacket):
+    def __init__(self):
+        super(ACKRequestPeer, self).__init__()
+        self.reassemble = ReAssembleHeader()
+        self.addresses: List[TupleAddressAndPort] = list()
+
+    def __pack_internal__(self, w: ByteWriter):
+        for tp in self.addresses:
+            tp.__pack_internal__(w)
+
+    def __unpack_internal__(self, r: ByteReader):
+        while r.remain() >= 6:
+            tp = TupleAddressAndPort()
+            tp.__unpack_internal__(r)
+            self.addresses.append(tp)

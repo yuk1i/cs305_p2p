@@ -1,4 +1,5 @@
 from __future__ import annotations
+
 from utils.bytes_utils import int_to_bytes, bytes_to_int, ByteWriter, ByteReader
 
 TYPE_NOTIFY = 0x05
@@ -28,16 +29,15 @@ NO_REASSEMBLE = ReAssembleHeader()
 NO_REASSEMBLE.enabled = False
 
 
-def deserialize_packet(data: bytes) -> BasePacket:
-    ptype = data[0]
-    if ptype == TYPE_NOTIFY:
-        return NotifyPacket().unpack(data)
-    elif ptype == TYPE_REGISTER:
-        return RegisterPacket().unpack(data)
-    # elif ptype == TYPE_REQUEST_PEERS:
+class Serializable:
+    def __pack_internal__(self, w: ByteWriter):
+        pass
+
+    def __unpack_internal__(self, r: ByteReader):
+        pass
 
 
-class BasePacket:
+class BasePacket(Serializable):
     """
     Base Packet
     For Incoming Packet:
@@ -61,8 +61,6 @@ class BasePacket:
         else:
             return 4
 
-    def set_data(self, data: bytes):
-        self.__data__ = data
 
     def get_reader(self) -> ByteReader:
         if self.__reader__:
@@ -118,6 +116,7 @@ class BasePacket:
         return w.data
 
     def unpack(self, data: bytes) -> BasePacket:
+        self.__data__ = data
         r = self.unpack_header()
         self.__unpack_internal__(r)
         return self
@@ -130,6 +129,9 @@ class BasePacket:
 
 
 class ACKPacket(BasePacket):
-    def __init__(self, request: BasePacket):
+    def __init__(self):
         super(ACKPacket, self).__init__(TYPE_ACK)
-        self.reversed = request.type & MASK_REVERSED
+
+    def set_request(self, req: BasePacket):
+        self.reversed = self.reversed | (req.type & MASK_REVERSED)
+        self.identifier = req.identifier

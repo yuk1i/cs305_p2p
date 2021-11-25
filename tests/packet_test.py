@@ -1,7 +1,11 @@
 import unittest
+
+from packet.deserializer import deserialize_packet
+from packet.p2t_packet import *
 from utils.bytes_utils import *
 from packet.base_packet import *
-from test_utils import assert_attr_equal
+from utils.test_utils import assert_attr_equal
+from utils.hash_utils import __get_hasher__
 
 
 class MyTestCase(unittest.TestCase):
@@ -13,6 +17,14 @@ class MyTestCase(unittest.TestCase):
         self.assertEqual(bytes_to_int(b'\x11\xFF'), 0x11FF)
         self.assertEqual(bytes_to_int(b'\xFF\xFF\xFF\xFF'), 0xFFFFFFFF)
         self.assertEqual(bytes_to_int(b'\x12\x11'), 0x1211)
+        hasher = __get_hasher__()
+        hasher.update(random_long())
+        hasher.update(random_long())
+        hasher.update(random_long())
+        b = hasher.digest()
+        bstr = hasher.hexdigest()
+        self.assertEqual(hexstr_to_bytes(bstr), b)
+        self.assertEqual(bytes_to_hexstr(b), bstr)
 
     def test_notify(self):
         n = NotifyPacket()
@@ -23,6 +35,18 @@ class MyTestCase(unittest.TestCase):
         binary = n.pack()
         nn = deserialize_packet(binary)
         assert_attr_equal(self, n, nn)
+
+        ack = ACKNotifyPacket()
+        ack.set_request(nn)
+        ack.uuid = bytes_to_int(random_long())
+        back = ack.pack()
+        uack = deserialize_packet(back)
+        self.assertEqual(uack.identifier, n.identifier)
+        self.assertEqual(ack.identifier, n.identifier)
+        print("Request Data: " + bytes_to_hexstr(binary))
+        print("Response Data: " + bytes_to_hexstr(back))
+        assert_attr_equal(self, ack, uack)
+
 
 
 if __name__ == '__main__':
