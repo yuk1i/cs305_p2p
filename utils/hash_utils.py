@@ -28,10 +28,11 @@ def hash_file(file_path: str) -> str:
 
 
 def hash_json_object(json_obj: dict) -> str:
-    json_str = json.dumps(json_obj, indent=0, sort_keys=True)
+    json_str = json.dumps(json_obj, sort_keys=True)
+    print(json_str)
     return hash_str(json_str)
 
 
 def hash_json_array(json_array: list) -> str:
-    json_str = json.dumps(json_array, indent=0, sort_keys=True)
+    json_str = json.dumps(json_array, sort_keys=True)
     return hash_str(json_str)
