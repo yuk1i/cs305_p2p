@@ -38,15 +38,24 @@ class MyTestCase(unittest.TestCase):
 
         ack = ACKNotifyPacket()
         ack.set_request(nn)
-        ack.uuid = bytes_to_int(random_long())
         back = ack.pack()
-        uack = deserialize_packet(back)
+        uack: ACKNotifyPacket = deserialize_packet(back)
         self.assertEqual(uack.identifier, n.identifier)
         self.assertEqual(ack.identifier, n.identifier)
         print("Request Data: " + bytes_to_hexstr(binary))
         print("Response Data: " + bytes_to_hexstr(back))
         assert_attr_equal(self, ack, uack)
 
+    def test_requestPeers(self):
+        req = RequestPeer()
+        req.identifier = bytes_to_int(random_short())
+        req.torrent_hash = random_bytes(32)
+        breq = req.pack()
+        rreq = deserialize_packet(breq)
+        assert_attr_equal(self, req, rreq)
+
+    def test_reassemble_header(self):
+        pass
 
 
 if __name__ == '__main__':

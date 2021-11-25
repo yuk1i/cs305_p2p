@@ -34,6 +34,10 @@ def random_long() -> bytes:
     return random.randbytes(8)
 
 
+def random_bytes(_len: int) -> bytes:
+    return random.randbytes(_len)
+
+
 class ByteWriter:
     def __init__(self, data: bytearray):
         self.data = data
