@@ -31,6 +31,7 @@ The Torrent Metadata is the field `torrent_hash`.
     // A json array of file object, order guaranteed but not important
     {
       // A file object
+      "seq": "integer, globally sequence number for FileObject",
       "name": "The name of this file",
       "dir": "relative path to this torrent, can be empty",
       "size": "integer, The size of file in bytes, must be 0 for a folder",
