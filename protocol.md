@@ -68,30 +68,94 @@ We define two json objects/arrays are EQUAL iff:
 
 4. space and tabs that are not in keys or values do not matter
 
+5. seq is an 32-bit unsigned integer that only uses 30bit. For details, see #### Request chunk info 0x31
+
 https://json-ld.org/ may help.
 
-## Communication Protocol
+## Communication Protocol 
 
 Communication is based on UDP, MTU?
 
 Types of Message:
 
+### General Flags
+
+- Re-assemble Flag   : 0x80
+- Speed Control Flag : 0x40
+- P2P Communication  : 0x20
+
 ### Peers to Trackers
 
-- Notify   : 0x05
-- Register : 0x10
-- Request Peers : 0x11
-- Cancel : 0x12
-- Close  : 0x13
+- Notify             : 0x05
+- Register           : 0x10
+- Request Peers      : 0x11
+- Cancel             : 0x12
+- Close              : 0x13
 
 ### Peers to Peers
 
-- Request for torrent  : 0x30
-- Chunk for torrent    : 0x31
-- Request for chunk    : 0x32
-- ACK message          : 0x20
+- Request torrent    : 0x30
+- Request chunk info : 0x31
+- Request chunk      : 0x32
 
-### Data Format
+### ACK Message
+
+- ACK message        : 0x20
+- The Reserved for ACK Message should be the type of the corresponding Request Message
+- The Identifier should be equal to the corresponding Request Message
+
+### Packet Format
+
+### General ideas
+
+#### Packet Header
+
+Type:8,F:1,S:1,Reserved:6,Identifier:16
+
+ 0                   1                   2                   3  
+ 0 1 2 3 4 5 6 7 8 9 0 1 2 3 4 5 6 7 8 9 0 1 2 3 4 5 6 7 8 9 0 1
++-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+
+|      Type     |F|S|  Reserved |           Identifier          |
++-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+
+
+
+- Type        : The Request Type
+- F           : Is a fragmentable packet, 0 for disabled default
+- S           : Speed Control Header, 0 for disabled default
+- Reserved    : Reserved bit, for ACK Message, the lower 6 bits should be the same as request's Type
+- Identifier  : Identifier for Replies and Fragments
+
+#### Speed Control Header
+
+? Do we need this ??
+
+#### Re-assemble Header in ACK Message
+
+If F bit is set, the remaining parts of the packet should be considered as a part of a long byte stream.
+
+12 bytes after the header are interpreted as following
+
+Type:8,1:1,S:1,Reserved:6,Identifier:16,Start(bytes):32,Length:32,Total Length:32
+
+ 0                   1                   2                   3  
+ 0 1 2 3 4 5 6 7 8 9 0 1 2 3 4 5 6 7 8 9 0 1 2 3 4 5 6 7 8 9 0 1
++-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+
+|      Type     |1|S|  Reserved |           Identifier          |
++-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+
+|                          Start(bytes)                         |
++-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+
+|                             Length                            |
++-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+
+|                          Total Length                         |
++-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+
+
+Start: The following data starts from data[`Start`]
+Length: The following data's length.
+Total Length: Total bytes
+
+We don't consider packet loss here. only packet out-of-order is considered.
+
+So we don't need to send packet to ASK lost fragment, only re-assembled is needed.
 
 #### Notify 0x05
 
@@ -155,35 +219,17 @@ Types of Message:
 |                                                               |
 +-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+
 
-
 #### ACK for Register 0x10
 
-0x20:8,0x10:8,Identifier:16,SHA256:256
+0x20:8,0x10:8,Identifier:16
 
  0                   1                   2                   3  
  0 1 2 3 4 5 6 7 8 9 0 1 2 3 4 5 6 7 8 9 0 1 2 3 4 5 6 7 8 9 0 1
 +-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+
 |      0x20     |      0x10     |           Identifier          |
 +-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+
-|                                                               |
-+                                                               +
-|                                                               |
-+                                                               +
-|                                                               |
-+                                                               +
-|                                                               |
-+                             SHA256                            +
-|                                                               |
-+                                                               +
-|                                                               |
-+                                                               +
-|                                                               |
-+                                                               +
-|                                                               |
-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+
 
-
-#### Request Peers (no auth)
+#### Request Peers (no auth) 0x11
 
 0x11:8,Reserved:8,Identifier:16,SHA256:256
 
@@ -209,47 +255,33 @@ Types of Message:
 |                                                               |
 +-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+
 
+#### ACK for Request Peers 0x11
 
-#### ACK for Request Peers
+Re-assemble Packet enabled
 
-0x20:8,0x11:8,Identifier:16,SHA256:256,Length:32,IPv4-1:32,UDPPort-1:16,IPv4-2:32,UDPPort-2:16,IPv4-3:32,UDPPort-3:16
+0x20:8,1:1,0:1,0x11:6,Identifier:16,Re-assemble Header:96,IPv4 Address:32,UDP Port:16,...:32,...:16
 
  0                   1                   2                   3  
  0 1 2 3 4 5 6 7 8 9 0 1 2 3 4 5 6 7 8 9 0 1 2 3 4 5 6 7 8 9 0 1
 +-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+
-|      0x20     |      0x11     |           Identifier          |
+|      0x20     |1|0|    0x11   |           Identifier          |
 +-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+
 |                                                               |
 +                                                               +
-|                                                               |
-+                                                               +
-|                                                               |
-+                                                               +
-|                                                               |
-+                             SHA256                            +
-|                                                               |
-+                                                               +
-|                                                               |
-+                                                               +
-|                                                               |
+|                       Re-assemble Header                      |
 +                                                               +
 |                                                               |
 +-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+
-|                             Length                            |
+|                          IPv4 Address                         |
 +-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+
-|                             IPv4-1                            |
+|            UDP Port           |              ...              |
 +-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+
-|           UDPPort-1           |             IPv4-2            |
+|                               |              ...              |
 +-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+
-|                               |           UDPPort-2           |
-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+
-|                             IPv4-3                            |
-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+
-
 
 #### Cancel 0x12
 
-0x12:8,Reserved:8,Identifier:16,UUID:64,SHA256:256
+0x12:8,Reserved:8,Identifier:16,UUID:64,Torrent Hash:256
 
  0                   1                   2                   3  
  0 1 2 3 4 5 6 7 8 9 0 1 2 3 4 5 6 7 8 9 0 1 2 3 4 5 6 7 8 9 0 1
@@ -267,7 +299,7 @@ Types of Message:
 |                                                               |
 +                                                               +
 |                                                               |
-+                             SHA256                            +
++                          Torrent Hash                         +
 |                                                               |
 +                                                               +
 |                                                               |
@@ -277,35 +309,15 @@ Types of Message:
 |                                                               |
 +-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+
 
-
-
 #### ACK for Cancel 0x12
 
-0x20:8,0x12:8,Identifier:16,SHA256:256
+0x20:8,0x12:8,Identifier:16
 
  0                   1                   2                   3  
  0 1 2 3 4 5 6 7 8 9 0 1 2 3 4 5 6 7 8 9 0 1 2 3 4 5 6 7 8 9 0 1
 +-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+
 |      0x20     |      0x12     |           Identifier          |
 +-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+
-|                                                               |
-+                                                               +
-|                                                               |
-+                                                               +
-|                                                               |
-+                                                               +
-|                                                               |
-+                             SHA256                            +
-|                                                               |
-+                                                               +
-|                                                               |
-+                                                               +
-|                                                               |
-+                                                               +
-|                                                               |
-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+
-
-
 
 #### Close 0x13
 
@@ -321,7 +333,6 @@ Types of Message:
 |                                                               |
 +-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+
 
-
 #### ACK for Close 0x13
 
 0x20:8,0x13:8,Identifier:16
@@ -334,7 +345,7 @@ Types of Message:
 
 #### Request for Torrent 0x30
 
-0x30:8,Reserved:8,Identifier:16,SHA256:256,Since:32,ExpectedLength:32
+0x30:8,Reserved:8,Identifier:16,Torrent Hash:256,Since:32,ExpectedLength:32
 
  0                   1                   2                   3  
  0 1 2 3 4 5 6 7 8 9 0 1 2 3 4 5 6 7 8 9 0 1 2 3 4 5 6 7 8 9 0 1
@@ -348,7 +359,7 @@ Types of Message:
 |                                                               |
 +                                                               +
 |                                                               |
-+                             SHA256                            +
++                          Torrent Hash                         +
 |                                                               |
 +                                                               +
 |                                                               |
@@ -367,41 +378,123 @@ Expected Length : 0xFFFFFFFF for the whole torrent
 
 #### ACK for Request for Torrent 0x30
 
-0x20:8,0x30:8,Identifier:16,SHA256:256,Length:32,Sequence:16,Length:16,VariableLength:64
+Re-assemble Header enabled
 
+0x20:8,1:1,S:1,0x30:6,Identifier:16,Re-assemble Header:96,Re-assembled Data:64
 
  0                   1                   2                   3  
  0 1 2 3 4 5 6 7 8 9 0 1 2 3 4 5 6 7 8 9 0 1 2 3 4 5 6 7 8 9 0 1
 +-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+
-|      0x20     |      0x30     |           Identifier          |
+|      0x20     |1|S|    0x30   |           Identifier          |
 +-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+
 |                                                               |
 +                                                               +
-|                                                               |
-+                                                               +
-|                                                               |
-+                                                               +
-|                                                               |
-+                             SHA256                            +
-|                                                               |
-+                                                               +
-|                                                               |
-+                                                               +
-|                                                               |
+|                       Re-assemble Header                      |
 +                                                               +
 |                                                               |
 +-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+
-|                             Length                            |
-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+
-|            Sequence           |             Length            |
-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+
 |                                                               |
-+                   data (VariableLength)                       +
++                       Re-assembled Data                       +
 |                                                               |
 +-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+
 
-Length: torrent file length (in bytes)
-Seq: i-th chunk of torrent file
-Length: how many bytes in this chunk
-data
+If Total-Length in Re-assemble Header is 0, asked peer doesn't have this file information
+
+#### Request chunk info 0x31
+
+Ask Peer which chunks it has
+
+0x31:8,Reserved:8,Identifier:16,Torrent Hash:256
+
+ 0                   1                   2                   3  
+ 0 1 2 3 4 5 6 7 8 9 0 1 2 3 4 5 6 7 8 9 0 1 2 3 4 5 6 7 8 9 0 1
++-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+
+|      0x31     |    Reserved   |           Identifier          |
++-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+
+|                                                               |
++                                                               +
+|                                                               |
++                                                               +
+|                                                               |
++                                                               +
+|                                                               |
++                          Torrent Hash                         +
+|                                                               |
++                                                               +
+|                                                               |
++                                                               +
+|                                                               |
++                                                               +
+|                                                               |
++-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+
+
+
+#### ACK Request chunk info 0x31
+
+0x20:8,0x31:8,Identifier:16,Torrent Hash:256,count:32,Seq ID:32,...:32
+
+ 0                   1                   2                   3  
+ 0 1 2 3 4 5 6 7 8 9 0 1 2 3 4 5 6 7 8 9 0 1 2 3 4 5 6 7 8 9 0 1
++-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+
+|     
+0x20     |      0x31     |           Identifier          |
++-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+
+|                                                               |
++                                                               +
+|                                                               |
++                                                               +
+|                                                               |
++                                                               +
+|                                                               |
++                          Torrent Hash                         +
+|                                                               |
++                                                               +
+|                                                               |
++                                                               +
+|                                                               |
++                                                               +
+|                                                               |
++-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+
+|                             count                             |
++-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+
+|                             Seq ID                            |
++-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+
+|                              ...                              |
++-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+
+
+##### Seq ID:
+
+Range:1,File:1,Seq ID:30
+
+ 0                   1                   2                   3  
+ 0 1 2 3 4 5 6 7 8 9 0 1 2 3 4 5 6 7 8 9 0 1 2 3 4 5 6 7 8 9 0 1
++-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+
+|R|F|                           Seq ID                          |
++-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+
+
+- When R flag is set: two "Seq ID"s are interpreted together:
+
+1:1,File:1,Seq ID Start:30,1:1,File:1,Seq ID End:30
+
+ 0                   1                   2                   3  
+ 0 1 2 3 4 5 6 7 8 9 0 1 2 3 4 5 6 7 8 9 0 1 2 3 4 5 6 7 8 9 0 1
++-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+
+|1|F|                        Seq ID Start                       |
++-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+
+|1|F|                         Seq ID End                        |
++-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+
+
+both start and end are included, Seq ID Start <= id <= Seq ID End
+
+- When F Flag is set, the "Seq ID" should be interpreted as a seq ID of a file
+
+- When R Flag and F Flag are both set, two "Seq ID"s should be interpreted as a range of continuous file seq id
+
+
+#### Request Chunk 0x32
+
+Ask chunk data
+
+0x32:8,1:1,Reserved:7,Identifier:16,Torrent Hash:256,Start Byte:32,Expected End Byte:32,
+
 
