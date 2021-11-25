@@ -1,6 +1,6 @@
 import unittest
 from utils.bytes_utils import *
-from packet import *
+from packet.base_packet import *
 from test_utils import assert_attr_equal
 
 
