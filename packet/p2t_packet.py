@@ -25,14 +25,12 @@ class NotifyPacket(BasePacket):
 class ACKNotifyPacket(ACKPacket):
     def __init__(self):
         super(ACKNotifyPacket, self).__init__()
-        self.uuid: int = 0
 
     def __pack_internal__(self, w: ByteWriter):
-        w.write_long(self.uuid)
+        pass
 
     def __unpack_internal__(self, r: ByteReader):
-        self.uuid = r.read_long()
-
+        pass
 
 class RegisterPacket(BasePacket):
     def __init__(self):
