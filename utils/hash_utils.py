@@ -1,18 +1,37 @@
+import hashlib
+import json
+
+
+def __get_hasher__():
+    m = hashlib.sha256()
+    return m
+
+
 def hash_bytes(data: bytes) -> str:
-    pass
+    m = __get_hasher__()
+    m.update(data)
+    return m.hexdigest()
 
 
 def hash_str(data: str) -> str:
-    pass
+    m = __get_hasher__()
+    m.update(data.encode(encoding="utf8"))
+    return m.hexdigest()
 
 
 def hash_file(file_path: str) -> str:
-    pass
+    m = __get_hasher__()
+    with open(file_path, "rb") as f:
+        for byte in iter(lambda: f.read(4096), b''):
+            m.update(byte)
+    return m.hexdigest()
 
 
 def hash_json_object(json_obj: dict) -> str:
-    pass
+    json_str = json.dumps(json_obj, indent=0, sort_keys=True)
+    return hash_str(json_str)
 
 
 def hash_json_array(json_array: list) -> str:
-    pass
+    json_str = json.dumps(json_array, indent=0, sort_keys=True)
+    return hash_str(json_str)
