@@ -8,7 +8,6 @@ There are some types of protocol we need to design:
 
 3. Metadata and torrent file format, including how to partition files and folder
 
-
 ### How to download
 
 1. The peer asks trackers for all peers that hold the target torrent.
@@ -16,7 +15,6 @@ There are some types of protocol we need to design:
 2. The peer communicates with all peers and download the metadata, i.e., the torrent file.
 
 3. The peer communicates with all peers and download files in the torrent.
-
 
 ### Torrent file
 
@@ -26,38 +24,35 @@ The Torrent Metadata is the field `torrent_hash`.
 
 ```json
 {
-	"name" : "The name of torrent file",
-	"torrent_hash" : "The hash of current json object, with this field empty",
-	"files" : [
-		// A json array of file object, order guaranteed in RFC 7159
-		{
-			// A file object, can be a folder, a file and a padding
-			"type" : "folder|file",
-			"name" : "The name of this file or folder",
-			"size" : "integer, The size of file in bytes, must be 0 for a folder",
-			"hash" : "For a file: SHA256 of the whole file; For a folder: empty string", 
-			"blocks" : [
-				// Every parts excluiding the last one must be the same, must be empty for a folder
-				{
-					// A part object
-					"seq"  : "integer, globally sequence number",
-					"size" : "integer, size of current partition in bytes, should be 4096",
-					"hash" : "SHA256 of this file partition"
-				}
-			],
-			"subfiles":[
-				// An array of file object, must be empty for a file
-			]
-		}
-	]
+  "name": "The name of torrent file",
+  "torrent_hash": "The hash of current json object, with this field empty",
+  "files": [
+    // A json array of file object, order guaranteed in RFC 7159
+    {
+      // A file object
+      "name": "The name of this file",
+      "dir": "relative path to this torrent, can be empty",
+      "size": "integer, The size of file in bytes, must be 0 for a folder",
+      "hash": "For a file: SHA256 of the whole file; For a folder: empty string",
+      "blocks": [
+        // Every blocks excluiding the last one must have the same size
+        {
+          // A block object
+          "seq": "integer, globally sequence number",
+          "size": "integer, size of current partition in bytes, should be 4096",
+          "hash": "SHA256 of this file partition"
+        }
+      ]
+    }
+  ]
 }
 ```
 
 Here we define two functions:
 
-1.  `hash_json_object`
+1. `hash_json_object`
 
-2.  `hash_json_array`
+2. `hash_json_array`
 
 They must be platform-indepentent and generate the same result for two EQUAL json objects/arrays.
 
@@ -72,8 +67,6 @@ We define two json objects/arrays are EQUAL iff:
 4. space and tabs that are not in keys or values do not matter
 
 https://json-ld.org/ may help.
-
-
 
 ### Communication Protocol
 
