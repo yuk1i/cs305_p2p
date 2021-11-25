@@ -113,9 +113,19 @@ class BasePacket:
         return writer
 
     def pack(self) -> bytes:
-        pass
+        w = self.pack_header()
+        self.__pack_internal__(w)
+        return w.data
 
     def unpack(self, data: bytes) -> BasePacket:
+        r = self.unpack_header()
+        self.__unpack_internal__(r)
+        return self
+
+    def __pack_internal__(self, w: ByteWriter):
+        pass
+
+    def __unpack_internal__(self, r: ByteReader):
         pass
 
 
@@ -132,20 +142,27 @@ class NotifyPacket(BasePacket):
         self.ipv4_address: int = 0
         self.udp_port: int = 0
 
-    def pack(self) -> bytes:
-        writer = self.pack_header()
-        writer.write_long(self.uuid)
-        writer.write_int(self.ipv4_address)
-        writer.write_short(self.udp_port)
-        return writer.data
+    def __pack_internal__(self, w):
+        w.write_long(self.uuid)
+        w.write_int(self.ipv4_address)
+        w.write_short(self.udp_port)
 
-    def unpack(self, data: bytes) -> BasePacket:
-        self.set_data(data)
-        r = self.unpack_header()
+    def __unpack_internal__(self, r: ByteReader):
         self.uuid = r.read_long()
         self.ipv4_address = r.read_int()
         self.udp_port = r.read_short()
-        return self
+
+
+class ACKNotifyPacket(ACKPacket):
+    def __init__(self, request: BasePacket):
+        super(ACKNotifyPacket, self).__init__(request)
+        self.uuid: int = 0
+
+    def __pack_internal__(self, w):
+        w.write_long(self.uuid)
+
+    def __unpack_internal__(self, r: ByteReader):
+        self.uuid = r.read_long()
 
 
 class RegisterPacket(BasePacket):
