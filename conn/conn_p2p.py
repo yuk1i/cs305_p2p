@@ -1,10 +1,16 @@
-from conn import ConnManager
+from typing import Tuple
+
+import controller
+from conn import Conn
 
 
-class P2PManager(ConnManager):
-    def __init__(self):
-        super(P2PManager, self).__init__()
-    pass
+class P2PConn(Conn):
+    """
+    A peer to peer Connection
+    """
+
+    def __init__(self, peer_addr: Tuple[str, int], ctrl: controller.Controller):
+        super(P2PConn, self).__init__(peer_addr, ctrl)
 
     def last_active(self):
         """
@@ -26,4 +32,3 @@ class P2PManager(ConnManager):
         :return:
         """
         pass
-

@@ -1,21 +1,25 @@
-from packet.base_packet import *
 from packet.p2t_packet import *
 
 
-def deserialize_packet(data: bytes) -> BasePacket:
-    ptype = data[0]
-    if ptype == TYPE_ACK:
-        req_type = data[1] & MASK_REVERSED
+def get_packet_by_type(itype: int, reserved: int = 0) -> BasePacket:
+    if itype == TYPE_ACK:
+        req_type = reserved
         if req_type == TYPE_NOTIFY:
-            return ACKNotifyPacket().unpack(data)
+            return ACKNotifyPacket()
         if req_type == TYPE_REGISTER:
-            return ACKRegisterPacket().unpack(data)
+            return ACKRegisterPacket()
         if req_type == TYPE_REQUEST_PEERS:
-            return ACKRequestPeer().unpack(data)
+            return ACKRequestPeer()
 
-    if ptype == TYPE_NOTIFY:
-        return NotifyPacket().unpack(data)
-    if ptype == TYPE_REGISTER:
-        return RegisterPacket().unpack(data)
-    if ptype == TYPE_REQUEST_PEERS:
-        return RequestPeer().unpack(data)
+    if itype == TYPE_NOTIFY:
+        return NotifyPacket()
+    if itype == TYPE_REGISTER:
+        return RegisterPacket()
+    if itype == TYPE_REQUEST_PEERS:
+        return RequestPeer()
+
+
+def deserialize_packet(data: bytes) -> BasePacket:
+    itype = data[0]
+    rev = data[1] & MASK_REVERSED
+    return get_packet_by_type(itype, rev).unpack(data)

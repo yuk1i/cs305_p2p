@@ -1,0 +1,33 @@
+from typing import Tuple, Dict, Set, List
+
+import conn
+import controller
+from packet.p2t_packet import *
+from utils.bytes_utils import int_to_ipv4, random_long, bytes_to_int, bytes_to_hexstr
+
+
+class TrackerConn(conn.Conn):
+    def __init__(self, peer_addr: Tuple[str, int], ctrl: controller.TrackerController):
+        super(TrackerConn, self).__init__(peer_addr, ctrl)
+        pass
+
+    def __handler__(self, packet: BasePacket):
+        self.controller: controller.TrackerController
+        if packet.type == TYPE_NOTIFY:
+            packet: NotifyPacket  # make IDE happy
+            peer_addr: Tuple[str, int] = (int_to_ipv4(packet.ipv4_address), packet.udp_port)
+            uuid = self.controller.new_peer(peer_addr)
+            print("[Tracker] Recv Notify from {}, return uuid {}".format(peer_addr, uuid))
+            ack = ACKNotifyPacket()
+            ack.set_request(packet)
+            ack.uuid = uuid
+            self.send_packet(ack)
+        elif packet.type == TYPE_REGISTER:
+            packet: RegisterPacket
+            ack = ACKRegisterPacket()
+            ack.set_request(packet)
+            if self.controller.register_torrent(packet.uuid, bytes_to_hexstr(packet.torrent_hash)):
+                ack.status = STATUS_OK
+            else:
+                ack.status = STATUS_NO_AUTH
+            self.send_packet(ack)

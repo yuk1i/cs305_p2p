@@ -159,16 +159,12 @@ So we don't need to send packet to ASK lost fragment, only re-assembled is neede
 
 #### Notify 0x05
 
-0x05:8,Reserved:8,Identifier:16,UUID:64,IPv4Address:32,Port:16
+0x05:8,Reserved:8,Identifier:16,IPv4Address:32,Port:16
 
  0                   1                   2                   3  
  0 1 2 3 4 5 6 7 8 9 0 1 2 3 4 5 6 7 8 9 0 1 2 3 4 5 6 7 8 9 0 1
 +-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+
 |      0x05     |    Reserved   |           Identifier          |
-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+
-|                                                               |
-+                              UUID                             +
-|                                                               |
 +-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+
 |                          IPv4Address                          |
 +-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+
@@ -177,13 +173,18 @@ So we don't need to send packet to ASK lost fragment, only re-assembled is neede
 
 #### ACK for Notify 0x05
 
-0x20:8,0x05:8,Identifier:16
+0x20:8,0x05:8,Identifier:16,UUID:64
 
  0                   1                   2                   3  
  0 1 2 3 4 5 6 7 8 9 0 1 2 3 4 5 6 7 8 9 0 1 2 3 4 5 6 7 8 9 0 1
 +-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+
 |      0x20     |      0x05     |           Identifier          |
 +-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+
+|                                                               |
++                              UUID                             +
+|                                                               |
++-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+
+
 
 #### Register 0x10
 
@@ -217,13 +218,15 @@ So we don't need to send packet to ASK lost fragment, only re-assembled is neede
 
 #### ACK for Register 0x10
 
-0x20:8,0x10:8,Identifier:16
+0x20:8,0x10:8,Identifier:16,status:8
 
  0                   1                   2                   3  
  0 1 2 3 4 5 6 7 8 9 0 1 2 3 4 5 6 7 8 9 0 1 2 3 4 5 6 7 8 9 0 1
 +-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+
 |      0x20     |      0x10     |           Identifier          |
 +-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+
+|     status    |
++-+-+-+-+-+-+-+-+
 
 #### Request Peers (no auth) 0x11
 

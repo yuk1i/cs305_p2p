@@ -3,21 +3,22 @@ from typing import List
 from packet.base_packet import *
 from utils.bytes_utils import ByteWriter, ByteReader
 
+STATUS_NOT_SET = 0x00
+STATUS_OK = 0x01
+STATUS_NO_AUTH = 0xF0
+
 
 class NotifyPacket(BasePacket):
     def __init__(self):
         super(NotifyPacket, self).__init__(TYPE_NOTIFY)
-        self.uuid: int = 0
         self.ipv4_address: int = 0
         self.udp_port: int = 0
 
     def __pack_internal__(self, w: ByteWriter):
-        w.write_long(self.uuid)
         w.write_int(self.ipv4_address)
         w.write_short(self.udp_port)
 
     def __unpack_internal__(self, r: ByteReader):
-        self.uuid = r.read_long()
         self.ipv4_address = r.read_int()
         self.udp_port = r.read_short()
 
@@ -25,12 +26,14 @@ class NotifyPacket(BasePacket):
 class ACKNotifyPacket(ACKPacket):
     def __init__(self):
         super(ACKNotifyPacket, self).__init__()
+        self.uuid: int = 0
 
     def __pack_internal__(self, w: ByteWriter):
-        pass
+        w.write_long(self.uuid)
 
     def __unpack_internal__(self, r: ByteReader):
-        pass
+        self.uuid = r.read_long()
+
 
 class RegisterPacket(BasePacket):
     def __init__(self):
@@ -50,12 +53,13 @@ class RegisterPacket(BasePacket):
 class ACKRegisterPacket(ACKPacket):
     def __init__(self):
         super(ACKRegisterPacket, self).__init__()
+        self.status: int = STATUS_OK
 
     def __pack_internal__(self, w: ByteWriter):
-        pass
+        w.write_byte(self.status)
 
     def __unpack_internal__(self, r: ByteReader):
-        pass
+        self.status = r.read_byte()
 
 
 class RequestPeer(BasePacket):
