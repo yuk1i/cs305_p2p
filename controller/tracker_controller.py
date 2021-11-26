@@ -27,9 +27,19 @@ class TrackerController(controller.Controller):
         return super().create_conn(target_addr)
 
     def get_peer(self, uuid: int) -> Tuple[str, int]:
+        """
+        get peer addr
+        :param uuid: peer uuid
+        :return:
+        """
         return self.peer_list[uuid]
 
     def new_peer(self, peer_addr: Tuple[str, int]) -> int:
+        """
+        create or retrieve an existing peer, return uuid
+        :param peer_addr: peer addr
+        :return: peer uuid
+        """
         if self.rev_peer_list[peer_addr]:
             return self.rev_peer_list[peer_addr]
         uuid = bytes_to_int(random_long())
@@ -56,3 +66,15 @@ class TrackerController(controller.Controller):
         self.torrents[torrent_hash].add(self.get_peer(uuid))
         print("[Tracker] Peer {} join torrent {}".format(self.get_peer(uuid), torrent_hash))
         return True
+
+    def cancel_torrent(self, uuid: int, torrent_hash: str) -> bool:
+        if not self.peer_exist(uuid):
+            return False
+        if torrent_hash not in self.torrents.keys():
+            return True
+        addr = self.get_peer(uuid)
+        if addr not in self.torrents[torrent_hash]:
+            return True
+        self.torrents[torrent_hash].remove(addr)
+        print("[Tracker] Peer {} cancel torrent {}".format(addr, torrent_hash))
+

@@ -11,23 +11,40 @@ class TrackerConn(conn.Conn):
         super(TrackerConn, self).__init__(peer_addr, ctrl)
         pass
 
-    def __handler__(self, packet: BasePacket):
+    def __handler__(self, pkt: BasePacket):
         self.controller: controller.TrackerController
-        if packet.type == TYPE_NOTIFY:
-            packet: NotifyPacket  # make IDE happy
-            peer_addr: Tuple[str, int] = (int_to_ipv4(packet.ipv4_address), packet.udp_port)
+        if pkt.type == TYPE_NOTIFY:
+            pkt: NotifyPacket  # make IDE happy
+            peer_addr: Tuple[str, int] = (int_to_ipv4(pkt.ipv4_address), pkt.udp_port)
             uuid = self.controller.new_peer(peer_addr)
             print("[Tracker] Recv Notify from {}, return uuid {}".format(peer_addr, uuid))
             ack = ACKNotifyPacket()
-            ack.set_request(packet)
+            ack.set_request(pkt)
             ack.uuid = uuid
             self.send_packet(ack)
-        elif packet.type == TYPE_REGISTER:
-            packet: RegisterPacket
+        elif pkt.type == TYPE_REGISTER:
+            pkt: RegisterPacket
             ack = ACKRegisterPacket()
-            ack.set_request(packet)
-            if self.controller.register_torrent(packet.uuid, bytes_to_hexstr(packet.torrent_hash)):
+            ack.set_request(pkt)
+            if self.controller.register_torrent(pkt.uuid, bytes_to_hexstr(pkt.torrent_hash)):
                 ack.status = STATUS_OK
             else:
                 ack.status = STATUS_NO_AUTH
+            self.send_packet(ack)
+        elif pkt.type == TYPE_CANCEL:
+            pkt: CancelPacket
+            ack = ACKCancelPacket()
+            ack.set_request(pkt)
+            if self.controller.cancel_torrent(pkt.uuid, bytes_to_hexstr(pkt.torrent_hash)):
+                ack.status = STATUS_OK
+            else:
+                ack.status = STATUS_NO_AUTH
+            self.send_packet(ack)
+        elif pkt.type == TYPE_CLOSE:
+            pkt: ClosePacket
+            ack = ACKClosePacket()
+            ack.set_request(pkt)
+            if self.controller.peer_exist(pkt.uuid):
+                self.controller.remove_peer(pkt.uuid)
+            ack.status = STATUS_OK
             self.send_packet(ack)
