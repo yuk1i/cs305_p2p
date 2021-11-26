@@ -1,11 +1,12 @@
 from __future__ import annotations
 
-from typing import Tuple
+from typing import Tuple, Dict, Any
 import threading
 import queue
 
 import controller
 from packet.base_packet import BasePacket
+from utils.bytes_utils import random_short, bytes_to_int
 
 EVTYPE_END = 1
 EVTYPE_INCOMING_PACKET = 2
@@ -17,16 +18,18 @@ class Conn:
     Manage a connection
     """
 
-    def __init__(self, peer_addr: Tuple[str, int], ctrl: controller.Controller):
-        self.peer_addr: Tuple[str, int] = peer_addr
-        self.controller = ctrl
+    def __init__(self, remote_addr: Tuple[str, int], ctrl: controller.Controller):
+        self.remote_addr: Tuple[str, int] = remote_addr
+        self.controller: controller.Controller = ctrl
+        self.__request_data__: Dict[int, Any] = dict()
+        # __request_data__ is used to save status between send and recv
         self.__recv_queue__ = queue.Queue()
         self.__send_queue__ = queue.Queue()
         self.__recv_thread__ = threading.Thread(target=self.__run__)
-        self.__recv_thread__.name = "Conn Recv Thread - Peer {}".format(self.peer_addr)
+        self.__recv_thread__.name = "Conn Recv Thread - Peer {}".format(self.remote_addr)
         self.__recv_thread__.start()
         self.__send_thread__ = threading.Thread(target=self.__send__)
-        self.__send_thread__.name = "Conn Send Thread - Peer {}".format(self.peer_addr)
+        self.__send_thread__.name = "Conn Send Thread - Peer {}".format(self.remote_addr)
         self.__send_thread__.start()
         pass
 
@@ -53,7 +56,7 @@ class Conn:
     def __send__(self):
         while True:
             pkt = self.__send_queue__.get(block=True)
-            self.controller.socket.send_packet(pkt, self.peer_addr)
+            self.controller.socket.send_packet(pkt, self.remote_addr)
 
     def recv_packet(self, packet: BasePacket):
         event = (EVTYPE_INCOMING_PACKET, packet)
@@ -61,3 +64,25 @@ class Conn:
 
     def send_packet(self, packet: BasePacket):
         self.__send_queue__.put_nowait(packet)
+
+    def new_identifier(self) -> int:
+        ident = bytes_to_int(random_short())
+        while ident in self.__request_data__.keys():
+            ident = bytes_to_int(random_short())
+        return ident
+
+    def put_state(self, identifier: int, state: Any):
+        self.__request_data__[identifier] = state
+
+    def retrieve_state(self, identifier: int) -> Any:
+        if identifier not in self.__request_data__.keys():
+            return None
+        data = self.__request_data__[identifier]
+        del self.__request_data__[identifier]
+        return data
+
+    def send_request(self, packet: BasePacket, state: Any) -> int:
+        packet.identifier = self.new_identifier()
+        self.put_state(packet.identifier, state)
+        self.send_packet(packet)
+        return packet.identifier
