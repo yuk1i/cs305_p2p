@@ -9,14 +9,14 @@ def get_packet_by_type(itype: int, reserved: int = 0) -> BasePacket:
         if req_type == TYPE_REGISTER:
             return ACKRegisterPacket()
         if req_type == TYPE_REQUEST_PEERS:
-            return ACKRequestPeer()
+            return ACKRequestPeerPacket()
 
     if itype == TYPE_NOTIFY:
         return NotifyPacket()
     if itype == TYPE_REGISTER:
         return RegisterPacket()
     if itype == TYPE_REQUEST_PEERS:
-        return RequestPeer()
+        return RequestPeerPacket()
 
 
 def deserialize_packet(data: bytes) -> BasePacket:

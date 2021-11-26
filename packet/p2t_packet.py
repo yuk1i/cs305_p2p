@@ -59,9 +59,9 @@ class ACKRegisterPacket(ACKPacket):
         self.status = r.read_byte()
 
 
-class RequestPeer(BasePacket):
+class RequestPeerPacket(BasePacket):
     def __init__(self):
-        super(RequestPeer, self).__init__(TYPE_REQUEST_PEERS)
+        super(RequestPeerPacket, self).__init__(TYPE_REQUEST_PEERS)
         self.torrent_hash: bytes = b''
 
     def __pack_internal__(self, w: ByteWriter):
@@ -71,9 +71,9 @@ class RequestPeer(BasePacket):
         self.torrent_hash = r.read_bytes(32)
 
 
-class ACKRequestPeer(ACKPacket):
+class ACKRequestPeerPacket(ACKPacket):
     def __init__(self):
-        super(ACKRequestPeer, self).__init__()
+        super(ACKRequestPeerPacket, self).__init__()
         self.reassemble = ReAssembleHeader()
         self.addresses: List[Tuple[str, int]] = list()
 
@@ -87,9 +87,9 @@ class ACKRequestPeer(ACKPacket):
             self.addresses.append((utils.int_to_ipv4(bytes_to_int(b[0:4])), bytes_to_int(b[4:6])))
 
 
-class Cancel(BasePacket):
+class CancelPacket(BasePacket):
     def __init__(self):
-        super(Cancel, self).__init__(TYPE_CANCEL)
+        super(CancelPacket, self).__init__(TYPE_CANCEL)
         self.uuid: int = 0
         self.torrent_hash: bytes = b''
 
@@ -102,9 +102,9 @@ class Cancel(BasePacket):
         self.torrent_hash = r.read_bytes(32)
 
 
-class ACKCancel(ACKPacket):
+class ACKCancelPacket(ACKPacket):
     def __init__(self):
-        super(ACKCancel, self).__init__()
+        super(ACKCancelPacket, self).__init__()
 
     def __pack_internal__(self, w: ByteWriter):
         pass
@@ -113,9 +113,9 @@ class ACKCancel(ACKPacket):
         pass
 
 
-class Close(BasePacket):
+class ClosePacket(BasePacket):
     def __init__(self):
-        super(Close, self).__init__(TYPE_CLOSE)
+        super(ClosePacket, self).__init__(TYPE_CLOSE)
         self.uuid: int = 0
 
     def __pack_internal__(self, w: ByteWriter):
@@ -125,9 +125,9 @@ class Close(BasePacket):
         self.uuid = r.read_long()
 
 
-class ACKClose(ACKPacket):
+class ACKClosePacket(ACKPacket):
     def __init__(self):
-        super(ACKClose, self).__init__()
+        super(ACKClosePacket, self).__init__()
 
     def __pack_internal__(self, w: ByteWriter):
         pass

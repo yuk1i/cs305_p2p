@@ -101,8 +101,10 @@ class Assembler:
         while len(raw) > 0:
             packed_data = raw[:max_p]
             raw = raw[max_p:]
-            pkt = ACKRequestPeer()
-            pkt.set_request(request)
+            pkt = packet.deserializer.get_packet_by_type(self.type, self.rev)
+            if self.type == TYPE_ACK:
+                pkt.set_request(request)
+            pkt.reassemble = ReAssembleHeader()
             pkt.reassemble.total_length = total_bytes
             pkt.reassemble.start = cnt * entry_size
             pkt.reassemble.length = len(packed_data) * entry_size
@@ -113,7 +115,7 @@ class Assembler:
 
     def pack_once(self, packed_data: List[Any] | bytes, pkt: BasePacket):
         if self.type == TYPE_ACK and self.rev == TYPE_REQUEST_PEERS:
-            pkt: ACKRequestPeer
+            pkt: ACKRequestPeerPacket
             packed_data: List[Tuple[str, int]]
             pkt.addresses.extend(packed_data)
         else:

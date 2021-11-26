@@ -50,7 +50,7 @@ class MyTestCase(unittest.TestCase):
         assert_attr_equal(self, ack, uack)
 
     def test_requestPeers(self):
-        req = RequestPeer()
+        req = RequestPeerPacket()
         req.identifier = bytes_to_int(random_short())
         req.torrent_hash = random_bytes(32)
         breq = req.pack()
@@ -61,7 +61,7 @@ class MyTestCase(unittest.TestCase):
         pass
 
     def test_assembler_boxing(self):
-        req = RequestPeer()
+        req = RequestPeerPacket()
         req.identifier = bytes_to_int(random_short())
         req.torrent_hash = random_bytes(32)
         lst: List[Tuple[str, int]] = list()
@@ -91,7 +91,7 @@ class MyTestCase(unittest.TestCase):
             else:
                 self.assertFalse(result)
         fpkt = deserialize_packet(ra.data)
-        fpkt: ACKRequestPeer
+        fpkt: ACKRequestPeerPacket
         self.assertEqual(fpkt.addresses, lst)
 
 
