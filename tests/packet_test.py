@@ -1,5 +1,6 @@
 import pprint
 import unittest
+from random import shuffle
 
 import conn
 from conn import ReAssembler
@@ -77,6 +78,7 @@ class MyTestCase(unittest.TestCase):
             data = print_packet(bb)
             print(bytes_to_hexstr(data))
             total_data += bytes_to_hexstr(data)
+        shuffle(bs)
         ra = ReAssembler(bs[0][0], bs[0][1] & MASK_REVERSED)
         print(total_data)
         print()

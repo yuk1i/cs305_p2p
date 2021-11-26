@@ -32,6 +32,7 @@ class ReAssembler:
         self.entry_size = get_entry_size(self.type, self.rev)
         self.final_pkt = None
         self.done = False
+        self.intervals: List[List[int]] = list()
         """
         :param ptype: Packet Type
         """
@@ -55,10 +56,10 @@ class ReAssembler:
             self.final_pkt = packet.deserializer.get_packet_by_type(self.type, self.rev)
             self.final_pkt.__data__ = bytearray(total_length + 4 + 12)
             self.final_pkt.__data__[0:16] = pkt.__data__[0:16]
-            import utils.test_utils
-            utils.test_utils.print_packet(self.final_pkt.__data__)
         self.final_pkt.__data__[start + 16:16 + start + length] = pkt.__data__[16:]
-        self.done = start + length == total_length
+        self.intervals.append([start, start + length])
+        self.merge()
+        self.done = self.intervals[0][0] == 0 and self.intervals[0][1] == total_length
         # print(bytes_utils.bytes_to_hexstr(self.final_pkt.__data__))
         return self.done
 
@@ -69,12 +70,17 @@ class ReAssembler:
         """
         return self.final_pkt
 
-    def done(self) -> bool:
-        """
-        Return whether reassemble is done
-        :return:
-        """
-        return self.done
+    def merge(self):
+        if len(self.intervals) == 0 or len(self.intervals) == 1:
+            return True
+        self.intervals.sort(key=lambda x: x[0])
+        result = [self.intervals[0]]
+        for interval in self.intervals[1:]:
+            if interval[0] <= result[-1][1]:
+                result[-1][1] = max(result[-1][1], interval[1])
+            else:
+                result.append(interval)
+        self.intervals = result
 
 
 class Assembler:
