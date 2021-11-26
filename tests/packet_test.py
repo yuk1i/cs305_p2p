@@ -32,7 +32,6 @@ class MyTestCase(unittest.TestCase):
     def test_notify(self):
         n = NotifyPacket()
         n.identifier = bytes_to_int(random_short())
-        n.uuid = bytes_to_int(random_long())
         n.ipv4_address = bytes_to_int(random_int())
         n.udp_port = bytes_to_int(random_short())
         binary = n.pack()
