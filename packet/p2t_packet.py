@@ -1,5 +1,6 @@
-from typing import List
+from typing import List, Tuple
 
+import utils.bytes_utils
 from packet.base_packet import *
 from utils.bytes_utils import ByteWriter, ByteReader
 
@@ -74,32 +75,17 @@ class RequestPeer(BasePacket):
         self.torrent_hash = r.read_bytes(32)
 
 
-class TupleAddressAndPort(Serializable):
-    def __init__(self, ipv4: int = 0, port: int = 0):
-        self.ipv4: int = ipv4
-        self.port: int = port
-
-    def __pack_internal__(self, w: ByteWriter):
-        w.write_int(self.ipv4)
-        w.write_short(self.port)
-
-    def __unpack_internal__(self, r: ByteReader):
-        self.ipv4 = r.read_int()
-        self.port = r.read_int()
-
-
 class ACKRequestPeer(ACKPacket):
     def __init__(self):
         super(ACKRequestPeer, self).__init__()
         self.reassemble = ReAssembleHeader()
-        self.addresses: List[TupleAddressAndPort] = list()
+        self.addresses: List[Tuple[str, int]] = list()
 
     def __pack_internal__(self, w: ByteWriter):
         for tp in self.addresses:
-            tp.__pack_internal__(w)
+            w.write_bytes(int_to_bytes(utils.ipport_to_int(tp), 6))
 
     def __unpack_internal__(self, r: ByteReader):
         while r.remain() >= 6:
-            tp = TupleAddressAndPort()
-            tp.__unpack_internal__(r)
-            self.addresses.append(tp)
+            b = r.read_bytes(6)
+            self.addresses.append((utils.int_to_ipv4(bytes_to_int(b[0:4])), bytes_to_int(b[4:6])))

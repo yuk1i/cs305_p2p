@@ -13,48 +13,13 @@ from packet.base_packet import BasePacket, FLAG_REASSEMBLE
 from utils import bytes_utils
 
 
-class ReAssembler:
-    """
-    ReAssemble Packets into one packet object
-    """
-
-    def __init__(self, ptype: int):
-        self.type: int = ptype
-        """
-        :param ptype: Packet Type
-        """
-        pass
-
-    def assemble(self, pkt: BasePacket) -> bool:
-        """
-        Reassemble a packet, return whether Reassembling is done
-        :param packet:
-        :return:
-        """
-        pass
-
-    def final(self) -> BasePacket:
-        """
-        Get the final packet
-        :return:
-        """
-        pass
-
-    def done(self) -> bool:
-        """
-        Return whether reassemble is done
-        :return:
-        """
-        pass
-
-
 class SocketManager:
     def __init__(self, pxy: proxy.Proxy, ctrl: controller.Controller):
         self.proxy = pxy
         self.controller = ctrl
         self.mapper: Dict[int, conn.Conn] = dict()
         # self.peers: List[ConnManager] = list()
-        self.reassemblers: Dict[int, ReAssembler] = dict()
+        self.reassemblers: Dict[int, conn.ReAssembler] = dict()
         self.thread = threading.Thread(target=self.__run__)
         self.thread.start()
 
@@ -93,9 +58,13 @@ class SocketManager:
             reass = self.reassemblers[identifier]
             if not reass:
                 ptype = pkt.__data__[0]
-                reass = self.reassemblers[identifier] = ReAssembler(ptype)
+                reass = self.reassemblers[identifier] = conn.ReAssembler(ptype)
             if reass.assemble(pkt):
-                peer.recv_packet(reass.final())
+                fpkt = reass.final()
+                fpkt.unpack(None)
+                # fpkt.__data__ is filled but not unpacked, so unpack it here
+                # None means use fpkt.__data__ instead of given bytes
+                peer.recv_packet(fpkt)
                 del self.reassemblers[identifier]
             return
         else:

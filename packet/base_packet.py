@@ -12,8 +12,8 @@ TYPE_REQUEST_CHUNK_INFO = 0x31
 TYPE_REQUEST_CHUNK = 0x32
 TYPE_ACK = 0x20
 
-FLAG_REASSEMBLE = 0x40
-FLAG_SPEED_CONTROL = 0x20
+FLAG_REASSEMBLE = 0x80
+FLAG_SPEED_CONTROL = 0x40
 MASK_REVERSED = 0x3F
 
 
@@ -115,7 +115,8 @@ class BasePacket(Serializable):
         return w.data
 
     def unpack(self, data: bytes) -> BasePacket:
-        self.__data__ = data
+        if data:
+            self.__data__ = data
         r = self.unpack_header()
         self.__unpack_internal__(r)
         return self

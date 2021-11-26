@@ -1,10 +1,13 @@
+import pprint
 import unittest
 
+import conn
+from conn import ReAssembler
 from packet.deserializer import deserialize_packet
 from packet.p2t_packet import *
 from utils.bytes_utils import *
 from packet.base_packet import *
-from utils.test_utils import assert_attr_equal
+from utils.test_utils import assert_attr_equal, print_packet
 from utils.hash_utils import __get_hasher__
 
 
@@ -56,6 +59,38 @@ class MyTestCase(unittest.TestCase):
 
     def test_reassemble_header(self):
         pass
+
+    def test_assembler_boxing(self):
+        req = RequestPeer()
+        req.identifier = bytes_to_int(random_short())
+        req.torrent_hash = random_bytes(32)
+        lst: List[Tuple[str, int]] = list()
+        for i in range(1, 205):
+            lst.append((int_to_ipv4(bytes_to_int(random_int())), bytes_to_int(random_short())))
+        print(lst)
+        ass = conn.Assembler(TYPE_ACK, TYPE_REQUEST_PEERS, lst, mtu=200)
+        ret = ass.boxing(req)
+        bs = list()
+        total_data = ""
+        for assed_ack in ret:
+            bb = assed_ack.pack()
+            bs.append(bb)
+            data = print_packet(bb)
+            print(bytes_to_hexstr(data))
+            total_data += bytes_to_hexstr(data)
+        ra = ReAssembler(bs[0][0], bs[0][1] & MASK_REVERSED)
+        print(total_data)
+        print()
+        print()
+        for assed_ack in bs:
+            pkt = deserialize_packet(assed_ack)
+            result = ra.assemble(pkt)
+            if assed_ack == bs[len(bs) - 1]:
+                self.assertTrue(result)
+            else:
+                self.assertFalse(result)
+        ra.final().unpack(None)
+        self.assertEqual(ra.final().addresses, lst)
 
 
 if __name__ == '__main__':
