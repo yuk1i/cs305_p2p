@@ -99,6 +99,7 @@ class RequestChunk(BasePacket):
 class ACKRequestChunk(ACKPacket):
     def __init__(self):
         super(ACKRequestChunk, self).__init__()
+        self.reassemble = ReAssembleHeader()
         self.status: int = STATUS_NOT_SET
         self.data: bytes = b''
 

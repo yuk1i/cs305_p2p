@@ -400,7 +400,7 @@ Re-assemble Header enabled
 
 If Total-Length in Re-assemble Header is 0, asked peer doesn't have this file information
 
-#### Request chunk info 0x31
+#### Update chunk info 0x31
 
 Ask Peer which chunks it has
 
