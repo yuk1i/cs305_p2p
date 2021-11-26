@@ -61,7 +61,6 @@ class BasePacket(Serializable):
         else:
             return 4
 
-
     def get_reader(self) -> ByteReader:
         if self.__reader__:
             return self.__reader__

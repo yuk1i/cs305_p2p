@@ -5,6 +5,7 @@ import threading
 import queue
 
 from packet.base_packet import BasePacket
+import socket_manager
 
 EVTYPE_END = 1
 EVTYPE_INCOMING_PACKET = 2
@@ -16,10 +17,11 @@ class ConnManager:
     Manage Peer Connections
     """
 
-    def __init__(self, peer_addr: Tuple[str, int]):
+    def __init__(self, peer_addr: Tuple[str, int], socket_manager: socket_manager.SocketManager):
         self.peer: Tuple[str, int] = peer_addr
         self.thread = threading.Thread(target=self.__run__)
         self.queue = queue.Queue()
+        self.socket = socket_manager
         pass
 
     def start(self):
@@ -49,23 +51,3 @@ class ConnManager:
         event = (EVTYPE_INCOMING_PACKET, packet)
         self.queue.put_nowait(event)
 
-    def last_active(self):
-        """
-        Return time passed after last communication
-        :return:
-        """
-        pass
-
-    def uplink_speed(self) -> int:
-        """
-        Get uplink speed in byte/s
-        :return:
-        """
-        pass
-
-    def downlink_speed(self) -> int:
-        """
-        Get download speed in byte/s
-        :return:
-        """
-        pass

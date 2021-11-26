@@ -1,4 +1,6 @@
-import conn.deliverer
-import conn.manager
+from socket_manager import SocketManager
+from manager import ConnManager
+from P2PManager import P2PManager
 
-__all__ = ['deliverer', 'manager']
+__all__ = ['SocketManager', 'ConnManager', 'P2PManager']
+
