@@ -1,3 +1,5 @@
+from __future__ import annotations
+
 from .controller import Controller
 from .tracker_controller import TrackerController
 from .peer_controller import PeerController, TrackerStatus

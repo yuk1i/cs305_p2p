@@ -35,3 +35,9 @@ class PeerController(controller.Controller):
     def register_torrent(self, torrent: Torrent):
         self.tracker_conn.register(torrent)
 
+    def close(self):
+        self.tracker_conn.close()
+        for con in self.peer_conns:
+            con.close()
+        self.socket.close()
+

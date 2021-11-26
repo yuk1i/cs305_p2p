@@ -16,8 +16,11 @@ class Controller:
         self.local_addr = addr
 
     def accept_conn(self, src_addr: Tuple[str, int]) -> conn.Conn:
-        print("[Controller] : new Conn from %s" % src_addr)
+        print("[Controller] : new Conn from %s:%s" % src_addr)
         return None
 
     def create_conn(self, target_addr: Tuple[str, int]) -> conn.Conn:
+        pass
+
+    def close(self):
         pass

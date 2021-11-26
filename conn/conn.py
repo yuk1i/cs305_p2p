@@ -23,6 +23,7 @@ class Conn:
         self.controller: controller.Controller = ctrl
         self.__request_data__: Dict[int, Any] = dict()
         # __request_data__ is used to save status between send and recv
+        self.controller.socket.register(remote_addr, self)
         self.__recv_queue__ = queue.Queue()
         self.__send_queue__ = queue.Queue()
         self.__recv_thread__ = threading.Thread(target=self.__run__)
@@ -34,7 +35,10 @@ class Conn:
         pass
 
     def close(self):
+        self.__send_queue__.put_nowait(None)
         self.__recv_queue__.put((EVTYPE_END, None))
+        self.__recv_thread__.join()
+        self.__send_thread__.join()
 
     def __run__(self):
         while True:
@@ -56,6 +60,8 @@ class Conn:
     def __send__(self):
         while True:
             pkt = self.__send_queue__.get(block=True)
+            if pkt is None:
+                return
             self.controller.socket.send_packet(pkt, self.remote_addr)
 
     def recv_packet(self, packet: BasePacket):
