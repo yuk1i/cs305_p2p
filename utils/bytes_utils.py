@@ -1,5 +1,8 @@
 from __future__ import annotations
 import random
+from typing import Tuple
+import socket
+import struct
 
 
 def bytes_to_int(data: bytes) -> int:
@@ -36,6 +39,26 @@ def random_long() -> bytes:
 
 def random_bytes(_len: int) -> bytes:
     return random.randbytes(_len)
+
+
+def ipv4_to_int(addr4: str) -> int:
+    """
+    Give a ipv4 address in dot format, such as 1.1.1.1
+    Convert it into uint32_t
+    :param addr4:
+    :return:
+    """
+    return struct.unpack("!I", socket.inet_aton(addr4))[0]
+
+
+def int_to_ipv4(addri: int) -> str:
+    return socket.inet_ntoa(struct.pack("!I", addri))
+
+
+def ipport_to_int(src_addr: Tuple[str, int]) -> int:
+    i4 = ipv4_to_int(src_addr[0]) << 16
+    i4 |= int(src_addr[1])
+    return i4
 
 
 class ByteWriter:
