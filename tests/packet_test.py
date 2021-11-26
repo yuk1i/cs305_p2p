@@ -90,8 +90,9 @@ class MyTestCase(unittest.TestCase):
                 self.assertTrue(result)
             else:
                 self.assertFalse(result)
-        ra.final().unpack(None)
-        self.assertEqual(ra.final().addresses, lst)
+        fpkt = deserialize_packet(ra.data)
+        fpkt: ACKRequestPeer
+        self.assertEqual(fpkt.addresses, lst)
 
 
 if __name__ == '__main__':

@@ -8,7 +8,7 @@ import packet.deserializer
 
 import conn
 import proxy
-from packet.base_packet import BasePacket, FLAG_REASSEMBLE
+from packet.base_packet import BasePacket, FLAG_REASSEMBLE, MASK_REVERSED
 
 from utils import bytes_utils
 
@@ -58,14 +58,12 @@ class SocketManager:
             reass = self.reassemblers[identifier]
             if not reass:
                 ptype = pkt.__data__[0]
-                reass = self.reassemblers[identifier] = conn.ReAssembler(ptype)
+                rev = pkt.__data__[1] & MASK_REVERSED
+                reass = self.reassemblers[identifier] = conn.ReAssembler(ptype, rev)
             if reass.assemble(pkt):
-                fpkt = reass.final()
-                fpkt.unpack(None)
-                # fpkt.__data__ is filled but not unpacked, so unpack it here
-                # None means use fpkt.__data__ instead of given bytes
-                peer.recv_packet(fpkt)
+                fpkt = packet.deserialize_packet(reass.data)
                 del self.reassemblers[identifier]
+                peer.recv_packet(fpkt)
             return
         else:
             peer.recv_packet(pkt)

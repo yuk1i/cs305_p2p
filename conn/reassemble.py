@@ -30,7 +30,7 @@ class ReAssembler:
         self.type: int = itype
         self.rev = rev & MASK_REVERSED
         self.entry_size = get_entry_size(self.type, self.rev)
-        self.final_pkt = None
+        self.data = None
         self.done = False
         self.intervals: List[List[int]] = list()
         """
@@ -45,30 +45,29 @@ class ReAssembler:
         :return:
         """
         if self.entry_size <= 0:
-            self.final_pkt = pkt
+            self.data = pkt
             self.done = True
             return True
         start = bytes_to_int(pkt.__data__[4:8])
         length = bytes_to_int(pkt.__data__[8:12])
         total_length = bytes_to_int(pkt.__data__[12:16])
         # print("assembling packets: start:{} length:{}, total:{}".format(start, length, total_length))
-        if not self.final_pkt:
-            self.final_pkt = packet.deserializer.get_packet_by_type(self.type, self.rev)
-            self.final_pkt.__data__ = bytearray(total_length + 4 + 12)
-            self.final_pkt.__data__[0:16] = pkt.__data__[0:16]
-        self.final_pkt.__data__[start + 16:16 + start + length] = pkt.__data__[16:]
+        if not self.data:
+            self.data = bytearray(total_length + 16)
+            self.data[0:16] = pkt.__data__[0:16]
+        self.data[start + 16:16 + start + length] = pkt.__data__[16:]
         self.intervals.append([start, start + length])
         self.merge()
         self.done = self.intervals[0][0] == 0 and self.intervals[0][1] == total_length
         # print(bytes_utils.bytes_to_hexstr(self.final_pkt.__data__))
         return self.done
 
-    def final(self) -> BasePacket:
+    def final(self) -> bytes:
         """
-        Get the final packet
+        Get the bytes
         :return:
         """
-        return self.final_pkt
+        return self.data
 
     def merge(self):
         if len(self.intervals) == 0 or len(self.intervals) == 1:
