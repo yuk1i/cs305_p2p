@@ -51,9 +51,7 @@ The Torrent Metadata is the field `torrent_hash`.
 ```
 
 Here we define two functions:
-
-1. `hash_json_object`
-
+ 没事瞄..
 2. `hash_json_array`
 
 They must be platform-indepentent and generate the same result for two EQUAL json objects/arrays.
@@ -379,7 +377,7 @@ Expected Length : 0xFFFFFFFF for the whole torrent
 
 Re-assemble Header enabled
 
-0x20:8,1:1,S:1,0x30:6,Identifier:16,Re-assemble Header:96,Re-assembled Data:64
+0x20:8,1:1,S:1,0x30:6,Identifier:16,Re-assemble Header:96,status:32,Re-assembled Data:64
 
  0                   1                   2                   3  
  0 1 2 3 4 5 6 7 8 9 0 1 2 3 4 5 6 7 8 9 0 1 2 3 4 5 6 7 8 9 0 1
@@ -392,10 +390,13 @@ Re-assemble Header enabled
 +                                                               +
 |                                                               |
 +-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+
+|                             status                            |
++-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+
 |                                                               |
 +                       Re-assembled Data                       +
 |                                                               |
 +-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+
+
 
 If Total-Length in Re-assemble Header is 0, asked peer doesn't have this file information
 
@@ -403,12 +404,18 @@ If Total-Length in Re-assemble Header is 0, asked peer doesn't have this file in
 
 Ask Peer which chunks it has
 
-0x31:8,Reserved:8,Identifier:16,Torrent Hash:256
+0x31:8,Reserved:8,Identifier:16,Re-assemble Header:96,Torrent Hash:256,Seq IDs:32,...:32
 
  0                   1                   2                   3  
  0 1 2 3 4 5 6 7 8 9 0 1 2 3 4 5 6 7 8 9 0 1 2 3 4 5 6 7 8 9 0 1
 +-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+
 |      0x31     |    Reserved   |           Identifier          |
++-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+
+|                                                               |
++                                                               +
+|                       Re-assemble Header                      |
++                                                               +
+|                                                               |
 +-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+
 |                                                               |
 +                                                               +
@@ -426,12 +433,16 @@ Ask Peer which chunks it has
 +                                                               +
 |                                                               |
 +-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+
+|                            Seq IDs                            |
++-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+
+|                              ...                              |
++-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+
 
 #### ACK Request chunk info 0x31
 
 Re-assemble Header enabled
 
-0x20:8,0x31:8,Identifier:16,Re-assemble Header:96,Seq ID:32,...:32
+0x20:8,0x31:8,Identifier:16,Re-assemble Header:96,status:32,Seq ID:32,...:32
 
  0                   1                   2                   3  
  0 1 2 3 4 5 6 7 8 9 0 1 2 3 4 5 6 7 8 9 0 1 2 3 4 5 6 7 8 9 0 1
@@ -444,10 +455,13 @@ Re-assemble Header enabled
 +                                                               +
 |                                                               |
 +-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+
+|                             status                            |
++-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+
 |                             Seq ID                            |
 +-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+
 |                              ...                              |
 +-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+
+
 
 ##### Seq ID:
 
@@ -515,7 +529,7 @@ Ask chunk data
 
 Re-assemble Header enabled
 
-0x20:8,1:1,S:1,0x32:6,Identifier:16,Re-assemble Header:96,data(variable length):64
+0x20:8,1:1,S:1,0x32:6,Identifier:16,Re-assemble Header:96,status:32,data(variable length):64
 
  0                   1                   2                   3  
  0 1 2 3 4 5 6 7 8 9 0 1 2 3 4 5 6 7 8 9 0 1 2 3 4 5 6 7 8 9 0 1
@@ -528,8 +542,11 @@ Re-assemble Header enabled
 +                                                               +
 |                                                               |
 +-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+
+|                             status                            |
++-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+
 |                                                               |
 +                     data(variable length)                     +
 |                                                               |
 +-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+
+
 

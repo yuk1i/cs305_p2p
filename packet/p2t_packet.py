@@ -4,10 +4,6 @@ import utils.bytes_utils
 from packet.base_packet import *
 from utils.bytes_utils import ByteWriter, ByteReader
 
-STATUS_NOT_SET = 0x00
-STATUS_OK = 0x01
-STATUS_NO_AUTH = 0xF0
-
 
 class NotifyPacket(BasePacket):
     def __init__(self):
@@ -89,3 +85,54 @@ class ACKRequestPeer(ACKPacket):
         while r.remain() >= 6:
             b = r.read_bytes(6)
             self.addresses.append((utils.int_to_ipv4(bytes_to_int(b[0:4])), bytes_to_int(b[4:6])))
+
+
+class Cancel(BasePacket):
+    def __init__(self):
+        super(Cancel, self).__init__(TYPE_CANCEL)
+        self.uuid: int = 0
+        self.torrent_hash: bytes = b''
+
+    def __pack_internal__(self, w: ByteWriter):
+        w.write_long(self.uuid)
+        w.write_bytes(self.torrent_hash)
+
+    def __unpack_internal__(self, r: ByteReader):
+        self.uuid = r.read_long()
+        self.torrent_hash = r.read_bytes(32)
+
+
+class ACKCancel(ACKPacket):
+    def __init__(self):
+        super(ACKCancel, self).__init__()
+
+    def __pack_internal__(self, w: ByteWriter):
+        pass
+
+    def __unpack_internal__(self, r: ByteReader):
+        pass
+
+
+class Close(BasePacket):
+    def __init__(self):
+        super(Close, self).__init__(TYPE_CLOSE)
+        self.uuid: int = 0
+
+    def __pack_internal__(self, w: ByteWriter):
+        w.write_long(self.uuid)
+
+    def __unpack_internal__(self, r: ByteReader):
+        self.uuid = r.read_long()
+
+
+class ACKClose(ACKPacket):
+    def __init__(self):
+        super(ACKClose, self).__init__()
+
+    def __pack_internal__(self, w: ByteWriter):
+        pass
+
+    def __unpack_internal__(self, r: ByteReader):
+        pass
+
+
