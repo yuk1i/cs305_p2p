@@ -6,7 +6,6 @@ import queue
 
 import controller
 from packet.base_packet import BasePacket
-import socket_manager
 
 EVTYPE_END = 1
 EVTYPE_INCOMING_PACKET = 2
