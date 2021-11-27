@@ -62,7 +62,7 @@ class Proxy:
                 self.recv_queue.put((msg, frm))
             else:
                 time.sleep(0.000001)
-        self.recv_queue.put((None, None))
+        self.recv_queue.put((b'', None))
         print("recv thread exited %s" % self.port)
 
     def sendto(self, data, address):
@@ -78,7 +78,7 @@ class Proxy:
 
     def close(self):
         self.active = False
-        self.socket.close()
         self.__send_t__.join()
         self.__buff_t__.join()
+        self.socket.close()
         self.__recv_t__.join()

@@ -27,7 +27,7 @@ class SocketManager:
     def __run__(self):
         while True:
             (data, src_addr) = self.proxy.recvfrom()
-            if data is None and not self.proxy.active:
+            if not data and not self.proxy.active:
                 print("Socket Manager exited")
                 return
             pkt = packet.deserializer.deserialize_packet(data)
