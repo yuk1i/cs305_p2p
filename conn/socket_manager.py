@@ -36,6 +36,7 @@ class SocketManager:
     def send_packet(self, pkt: BasePacket, dst_addr: IPPort):
         data = pkt.pack()
         self.proxy.sendto(data, dst_addr)
+        # non blocking
 
     def register(self, addr: IPPort, con: conn.Conn):
         if addr in self.mapper.keys():
@@ -74,10 +75,10 @@ class SocketManager:
             peer.recv_packet(pkt)
 
     def close(self):
-        self.proxy.close()
-        self.thread.join()
         for con in self.mapper.values():
             con.close()
+        self.proxy.close()
+        self.thread.join()
 
 
 if __name__ == '__main__':
