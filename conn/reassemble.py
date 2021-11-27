@@ -116,7 +116,7 @@ class Assembler:
     def pack_once(self, packed_data: List[Any] | bytes, pkt: BasePacket):
         if self.type == TYPE_ACK and self.rev == TYPE_REQUEST_PEERS:
             pkt: ACKRequestPeerPacket
-            packed_data: List[Tuple[str, int]]
+            packed_data: List[IPPort]
             pkt.addresses.extend(packed_data)
         else:
             pkt.data = packed_data

@@ -64,7 +64,7 @@ class MyTestCase(unittest.TestCase):
         req = RequestPeerPacket()
         req.identifier = bytes_to_int(random_short())
         req.torrent_hash = random_bytes(32)
-        lst: List[Tuple[str, int]] = list()
+        lst: List[IPPort] = list()
         for i in range(1, 205):
             lst.append((int_to_ipv4(bytes_to_int(random_int())), bytes_to_int(random_short())))
         print(lst)

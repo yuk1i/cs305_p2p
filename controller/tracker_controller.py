@@ -5,31 +5,32 @@ from typing import Tuple, Dict, List, Set
 import conn
 import proxy
 import controller
+from utils import IPPort
 from utils.bytes_utils import random_long, bytes_to_int
 
 
 class TrackerController(controller.Controller):
     def __init__(self, pxy: proxy.Proxy):
         super(TrackerController, self).__init__(pxy)
-        self.peers: List[Tuple[int, Tuple[str, int]]] = list()
+        self.peers: List[Tuple[int, IPPort]] = list()
         # peer_list maps a UUID to peer_addr
-        self.torrents: Dict[str, Set[Tuple[str, int]]] = dict()
+        self.torrents: Dict[str, Set[IPPort]] = dict()
         self.conns: List[conn.Conn] = list()
         # torrents maps a torrent_hash to a peer_addr list indicating who has this torrent_hash
 
-    def accept_conn(self, src_addr: Tuple[str, int]) -> conn.Conn:
+    def accept_conn(self, src_addr: IPPort) -> conn.Conn:
         super(TrackerController, self).accept_conn(src_addr)
         con = conn.TrackerConn(src_addr, self)
         self.conns.append(con)
         return con
 
-    def create_conn(self, target_addr: Tuple[str, int]) -> conn.Conn:
+    def create_conn(self, target_addr: IPPort) -> conn.Conn:
         return super().create_conn(target_addr)
 
     def peer_exist(self, uuid: int) -> bool:
         return self.get_peer(uuid=uuid) is not None
 
-    def get_peer(self, uuid: int = -1, addr: Tuple[str, int] = None) -> Tuple[int, Tuple[str, int]]:
+    def get_peer(self, uuid: int = -1, addr: IPPort = None) -> Tuple[int, IPPort]:
         """
         get peer addr
         :param uuid: peer uuid
@@ -41,7 +42,7 @@ class TrackerController(controller.Controller):
                 return tp[0], tp[1]
         return None, None
 
-    def new_peer(self, peer_addr: Tuple[str, int]) -> int:
+    def new_peer(self, peer_addr: IPPort) -> int:
         """
         create or retrieve an existing peer, return uuid
         :param peer_addr: peer addr

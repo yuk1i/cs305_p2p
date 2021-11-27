@@ -10,7 +10,7 @@ from utils.bytes_utils import int_to_ipv4, random_long, bytes_to_int, bytes_to_h
 
 
 class PeerToTrackerConn(conn.Conn):
-    def __init__(self, tracker_addr: Tuple[str, int], ctrl: controller.PeerController):
+    def __init__(self, tracker_addr: IPPort, ctrl: controller.PeerController):
         super(PeerToTrackerConn, self).__init__(tracker_addr, ctrl)
         pass
 
@@ -24,7 +24,7 @@ class PeerToTrackerConn(conn.Conn):
                 self.controller.tracker_status = controller.TrackerStatus.NOTIFIED
                 self.controller.tracker_uuid = pkt.uuid
 
-    def notify(self, my_addr: Tuple[str, int]):
+    def notify(self, my_addr: IPPort):
         notify_req = NotifyPacket()
         notify_req.ipv4_address = ipv4_to_int(my_addr[0])
         notify_req.udp_port = my_addr[1]

@@ -2,6 +2,7 @@ from typing import List, Tuple
 
 import utils.bytes_utils
 from packet.base_packet import *
+from utils import IPPort
 from utils.bytes_utils import ByteWriter, ByteReader
 
 
@@ -75,7 +76,7 @@ class ACKRequestPeerPacket(ACKPacket):
     def __init__(self):
         super(ACKRequestPeerPacket, self).__init__()
         self.reassemble = ReAssembleHeader()
-        self.addresses: List[Tuple[str, int]] = list()
+        self.addresses: List[IPPort] = list()
 
     def __pack_internal__(self, w: ByteWriter):
         for tp in self.addresses:

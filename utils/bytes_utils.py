@@ -4,6 +4,8 @@ from typing import Tuple
 import socket
 import struct
 
+import utils
+
 
 def bytes_to_int(data: bytes) -> int:
     return int.from_bytes(data, byteorder='big', signed=False)
@@ -55,7 +57,7 @@ def int_to_ipv4(addri: int) -> str:
     return socket.inet_ntoa(struct.pack("!I", addri))
 
 
-def ipport_to_int(src_addr: Tuple[str, int]) -> int:
+def ipport_to_int(src_addr: utils.ip_port.IPPort) -> int:
     i4 = ipv4_to_int(src_addr[0]) << 16
     i4 |= int(src_addr[1])
     return i4

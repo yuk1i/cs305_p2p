@@ -6,6 +6,7 @@ import conn
 import proxy
 import controller
 from torrent import Torrent
+from utils import IPPort
 from utils.bytes_utils import random_long, bytes_to_int
 
 
@@ -16,7 +17,7 @@ class TrackerStatus:
 
 
 class PeerController(controller.Controller):
-    def __init__(self, pxy: proxy.Proxy, tracker_addr: Tuple[str, int]):
+    def __init__(self, pxy: proxy.Proxy, tracker_addr: IPPort):
         super(PeerController, self).__init__(pxy)
         self.torrent_list: List[Torrent] = list()
         self.active_torrents: Dict[str, controller.TorrentController] = dict()
@@ -26,7 +27,7 @@ class PeerController(controller.Controller):
         self.tracker_status: int = TrackerStatus.NOT_NOTIFIED
         self.tracker_uuid: int = 0
 
-    def notify_tracker(self, my_addr: Tuple[str, int]):
+    def notify_tracker(self, my_addr: IPPort):
         if self.tracker_status != TrackerStatus.NOT_NOTIFIED:
             print("[P2T] tracker status: %s" % self.tracker_status)
             return

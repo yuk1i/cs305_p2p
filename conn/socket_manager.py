@@ -11,15 +11,7 @@ import conn
 import proxy
 from packet.base_packet import BasePacket, FLAG_REASSEMBLE, MASK_REVERSED
 
-from utils import bytes_utils
-
-IPPortBase = namedtuple("IPPortBase", ["ip", "port"])
-
-
-class IPPort(IPPortBase):
-    def __new__(cls, ip, port):
-        obj = IPPortBase.__new__(cls, ip, port)
-        return obj
+from utils import bytes_utils, IPPort
 
 
 class SocketManager:
@@ -56,7 +48,7 @@ class SocketManager:
             self.mapper[addr].close()
             del self.mapper[addr]
 
-    def on_pkt_recv(self, src_addr: Tuple[str, int], pkt: BasePacket):
+    def on_pkt_recv(self, src_addr: IPPort, pkt: BasePacket):
         iaddr = IPPort(src_addr[0], src_addr[1])
         if iaddr not in self.mapper.keys():
             # TODO: Create new Conn
@@ -68,11 +60,11 @@ class SocketManager:
         fragment: bool = pkt.__data__[1] & FLAG_REASSEMBLE == FLAG_REASSEMBLE
         if fragment:
             identifier: int = bytes_utils.bytes_to_int(pkt.__data__[2:2 + 2])
-            reass = self.reassemblers[identifier]
-            if not reass:
+            if identifier not in self.reassemblers.keys():
                 ptype = pkt.__data__[0]
                 rev = pkt.__data__[1] & MASK_REVERSED
-                reass = self.reassemblers[identifier] = conn.ReAssembler(ptype, rev)
+                self.reassemblers[identifier] = conn.ReAssembler(ptype, rev)
+            reass = self.reassemblers[identifier]
             if reass.assemble(pkt):
                 fpkt = packet.deserialize_packet(reass.data)
                 del self.reassemblers[identifier]

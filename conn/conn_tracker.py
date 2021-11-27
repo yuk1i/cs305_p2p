@@ -8,7 +8,7 @@ from utils.bytes_utils import int_to_ipv4, random_long, bytes_to_int, bytes_to_h
 
 
 class TrackerConn(conn.Conn):
-    def __init__(self, peer_addr: Tuple[str, int], ctrl: controller.TrackerController):
+    def __init__(self, peer_addr: IPPort, ctrl: controller.TrackerController):
         super(TrackerConn, self).__init__(peer_addr, ctrl)
         pass
 
@@ -16,7 +16,7 @@ class TrackerConn(conn.Conn):
         self.controller: controller.TrackerController
         if pkt.type == TYPE_NOTIFY:
             pkt: NotifyPacket  # make IDE happy
-            peer_addr: Tuple[str, int] = (int_to_ipv4(pkt.ipv4_address), pkt.udp_port)
+            peer_addr: IPPort = (int_to_ipv4(pkt.ipv4_address), pkt.udp_port)
             uuid = self.controller.new_peer(peer_addr)
             print("[Tracker] Recv Notify from {}, return uuid {}".format(peer_addr, uuid))
             ack = ACKNotifyPacket()

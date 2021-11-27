@@ -6,6 +6,7 @@ import queue
 
 import controller
 from packet.base_packet import BasePacket
+from utils import IPPort
 from utils.bytes_utils import random_short, bytes_to_int
 
 EVTYPE_END = 1
@@ -18,8 +19,8 @@ class Conn:
     Manage a connection
     """
 
-    def __init__(self, remote_addr: Tuple[str, int], ctrl: controller.Controller):
-        self.remote_addr: Tuple[str, int] = remote_addr
+    def __init__(self, remote_addr: IPPort, ctrl: controller.Controller):
+        self.remote_addr: IPPort = remote_addr
         self.controller: controller.Controller = ctrl
         self.__request_data__: Dict[int, Any] = dict()
         # __request_data__ is used to save status between send and recv

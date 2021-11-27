@@ -4,6 +4,7 @@ from typing import Tuple
 
 import controller
 from conn import Conn
+from utils import IPPort
 
 
 class P2PConn(Conn):
@@ -11,7 +12,7 @@ class P2PConn(Conn):
     A peer to peer Connection
     """
 
-    def __init__(self, peer_addr: Tuple[str, int], ctrl: controller.Controller):
+    def __init__(self, peer_addr: IPPort, ctrl: controller.Controller):
         super(P2PConn, self).__init__(peer_addr, ctrl)
 
     def last_active(self):
