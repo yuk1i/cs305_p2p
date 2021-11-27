@@ -10,12 +10,6 @@ from utils import IPPort
 from utils.bytes_utils import random_long, bytes_to_int
 
 
-class TrackerStatus:
-    NOT_NOTIFIED = 1
-    NOTIFYING = 2
-    NOTIFIED = 3
-
-
 class PeerController(controller.Controller):
     def __init__(self, pxy: proxy.Proxy, tracker_addr: IPPort):
         super(PeerController, self).__init__(pxy)
@@ -24,11 +18,11 @@ class PeerController(controller.Controller):
         self.peer_conns: List[conn.P2PConn] = list()
         self.tracker_addr = tracker_addr
         self.tracker_conn: conn.PeerToTrackerConn = conn.PeerToTrackerConn(self.tracker_addr, self)
-        self.tracker_status: int = TrackerStatus.NOT_NOTIFIED
+        self.tracker_status: int = controller.TrackerStatus.NOT_NOTIFIED
         self.tracker_uuid: int = 0
 
     def notify_tracker(self, my_addr: IPPort):
-        if self.tracker_status != TrackerStatus.NOT_NOTIFIED:
+        if self.tracker_status != controller.TrackerStatus.NOT_NOTIFIED:
             print("[P2T] tracker status: %s" % self.tracker_status)
             return
         self.tracker_conn.notify(my_addr)
@@ -41,4 +35,3 @@ class PeerController(controller.Controller):
         for con in self.peer_conns:
             con.close()
         self.socket.close()
-
