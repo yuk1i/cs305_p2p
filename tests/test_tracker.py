@@ -11,9 +11,11 @@ class TrackerTest(unittest.TestCase):
     def test_tracker(self):
         tracker = TrackerController(Proxy(0, 0, 10086))
         tracker_addr = ('127.0.0.1', 10086)
-        peer = PeerController(Proxy(0, 0, 20086), tracker_addr)
         peer_addr = ("127.0.0.1", 20086)
-        peer.notify_tracker(peer_addr)
+        peer = PeerController(Proxy(0, 0, 20086), peer_addr, tracker_addr)
+
+        # Test Notify
+        peer.notify_tracker()
         while peer.tracker_status != TrackerStatus.NOTIFIED:
             time.sleep(0.05)
         time.sleep(1)
