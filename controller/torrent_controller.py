@@ -2,14 +2,16 @@ from __future__ import annotations
 
 from typing import List, Tuple
 
-from controller import TorrentStatus
+import controller
+from torrent import Torrent
 from utils import IPPort
 
 
 class TorrentController:
-    def __init__(self, torrent_hash: str):
-        self.torrent_hash: str = torrent_hash
-        self.status = TorrentStatus.TORRENT_STATUS_NOT_STARTED
+    def __init__(self, torrent: Torrent):
+        self.torrent_hash: str = torrent.torrent_hash
+        self.torrent = torrent
+        self.status = controller.TorrentStatus.TORRENT_STATUS_NOT_STARTED
         self.chunk_status: List[bool] = list()
         self.peer_list: List[IPPort] = list()
         self.tracker_addr: IPPort = ("", 0)

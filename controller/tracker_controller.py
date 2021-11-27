@@ -62,7 +62,7 @@ class TrackerController(controller.Controller):
     def register_torrent(self, uuid: int, torrent_hash: str) -> bool:
         if not self.peer_exist(uuid):
             return False
-        if not self.torrents[torrent_hash]:
+        if torrent_hash not in self.torrents.keys():
             self.torrents[torrent_hash] = set()
             print("[Tracker] New Torrent %s" % torrent_hash)
         if self.get_peer(uuid) in self.torrents[torrent_hash]:

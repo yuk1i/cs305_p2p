@@ -6,7 +6,7 @@ import conn
 import controller
 from packet.p2t_packet import *
 from torrent import Torrent
-from utils.bytes_utils import int_to_ipv4, random_long, bytes_to_int, bytes_to_hexstr, ipv4_to_int
+from utils.bytes_utils import int_to_ipv4, random_long, bytes_to_int, bytes_to_hexstr, ipv4_to_int, hexstr_to_bytes
 
 
 class PeerToTrackerConn(conn.Conn):
@@ -23,6 +23,13 @@ class PeerToTrackerConn(conn.Conn):
                 pkt: ACKNotifyPacket
                 self.controller.tracker_status = controller.TrackerStatus.NOTIFIED
                 self.controller.tracker_uuid = pkt.uuid
+            elif req_type == TYPE_REGISTER:
+                pkt: ACKRegisterPacket
+                torrent_hash: str = state
+                print("[Conn P2T] Recv ACK for Reg")
+                if pkt.status == STATUS_OK and torrent_hash in self.controller.active_torrents.keys():
+                    self.controller.active_torrents[
+                        torrent_hash].status = controller.TorrentStatus.TORRENT_STATUS_REGISTERED
 
     def notify(self, my_addr: IPPort):
         notify_req = NotifyPacket()
@@ -32,4 +39,8 @@ class PeerToTrackerConn(conn.Conn):
         self.send_request(notify_req, None)
 
     def register(self, torrent: Torrent):
-        pass
+        self.controller: controller.PeerController
+        req = RegisterPacket()
+        req.torrent_hash = hexstr_to_bytes(torrent.torrent_hash)
+        req.uuid = self.controller.tracker_uuid
+        self.send_request(req, torrent.torrent_hash)
