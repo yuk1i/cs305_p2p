@@ -31,7 +31,6 @@ class Conn:
         pass
 
     def close(self):
-        self.controller.socket.unregister(self.remote_addr)
         self.__recv_queue__.put((EVTYPE_END, None))
         self.__recv_thread__.join()
 

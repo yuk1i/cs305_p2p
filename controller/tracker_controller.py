@@ -83,6 +83,4 @@ class TrackerController(controller.Controller):
         print("[Tracker] Peer {} cancel torrent {}".format(addr, torrent_hash))
 
     def close(self):
-        for con in self.conns:
-            con.close()
         self.socket.close()
