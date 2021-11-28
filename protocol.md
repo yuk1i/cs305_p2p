@@ -6,21 +6,21 @@ There are some types of protocol we need to design:
 
 2. Peer to Tracker
 
-3. Metadata and torrent file format, including how to partition files and folder
+3. torrent file format, the torrent file includes metadata and how to partition the distributed files and folder
 
 ### How to download
 
-1. The peer asks trackers for all peers that hold the target torrent.
+1. The peer asks trackers for all peers that hold the target torrent, with the torrent hash or entire torrent file.
 
-2. The peer communicates with all peers and download the metadata, i.e., the torrent file.
+2. If the peer only own the torrent hash, the peer communicates with all peers and download the torrent file.
 
-3. The peer communicates with all peers and download files in the torrent.
+3. The peer communicates with all peers and download files distributed in the torrent.
 
 ### Torrent file
 
 A torrent file is a json file that describes folder structures, file name, file hash and hash of every partition.
 
-The Torrent Metadata is the field `torrent_hash`.
+The only identifier for the torrent is the field `torrent_hash`.
 
 ```json
 {
@@ -51,7 +51,7 @@ The Torrent Metadata is the field `torrent_hash`.
 ```
 
 Here we define two functions:
- 没事瞄..
+ 没事瞄..喵喵喵
 2. `hash_json_array`
 
 They must be platform-indepentent and generate the same result for two EQUAL json objects/arrays.
@@ -72,7 +72,7 @@ https://json-ld.org/ may help.
 
 ## Communication Protocol 
 
-Communication is based on UDP, MTU?
+Communication is based on UDP, so we ought to consider MTU.
 
 Types of Message:
 
@@ -99,8 +99,10 @@ Types of Message:
 ### ACK Message
 
 - ACK message        : 0x20
-- The Reserved for ACK Message should be the type of the corresponding Request Message
-- The Identifier should be equal to the corresponding Request Message
+- The `Reserved` field for ACK Message should be the `Type` field of the corresponding Request Message
+- The `Identifier` field should be the same as in the corresponding Request Message
+
+## Packet Format
 
 ### General ideas
 
@@ -145,17 +147,19 @@ Type:8,1:1,S:1,Reserved:6,Identifier:16,Start(bytes):32,Length:32,Total Length:3
 |                          Total Length                         |
 +-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+
 
-Start: The following data starts from data[`Start`]
+Start: The following data starts from data[`Start`].
 Length: The following data's length.
-Total Length: Total bytes
+Total Length: Total bytes.
 
 We don't consider packet loss here. only packet out-of-order is considered.
 
 So we don't need to send packet to ASK lost fragment, only re-assembled is needed.
 
-### Packet Format
+### Peer to Tracker
 
 #### Notify 0x05
+
+Notify the Tracker the existence of Peer, request for unique client uuid.
 
 0x05:8,Reserved:8,Identifier:16,IPv4Address:32,Port:16
 
@@ -168,6 +172,10 @@ So we don't need to send packet to ASK lost fragment, only re-assembled is neede
 +-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+
 |            UDPPort            |
 +-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+
+
+`IPv4Address`: Client ipv4 address.
+
+`UDPPort`: Client port. 
 
 #### ACK for Notify 0x05
 
@@ -183,6 +191,7 @@ So we don't need to send packet to ASK lost fragment, only re-assembled is neede
 |                                                               |
 +-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+
 
+`UUID`: uuid for the corresponding client.
 
 #### Register 0x10
 
@@ -340,6 +349,8 @@ Re-assemble Packet enabled
 |      0x20     |      0x13     |           Identifier          |
 +-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+
 
+### Peer to Peer
+
 #### Request for Torrent 0x30
 
 0x30:8,Reserved:8,Identifier:16,Torrent Hash:256,Since:32,ExpectedLength:32
@@ -462,8 +473,7 @@ Re-assemble Header enabled
 |                              ...                              |
 +-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+
 
-
-##### Seq ID:
+Seq ID:
 
 Range:1,File:1,Seq ID:30
 
