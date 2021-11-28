@@ -46,8 +46,9 @@ class SocketManager:
 
     def unregister(self, addr: IPPort):
         if addr in self.mapper.keys():
-            self.mapper[addr].close()
+            con = self.mapper[addr] # may delete this?
             del self.mapper[addr]
+            con.close() # may delete this?
 
     def on_pkt_recv(self, src_addr: IPPort, pkt: BasePacket):
         iaddr = IPPort(src_addr[0], src_addr[1])
