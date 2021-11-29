@@ -30,17 +30,35 @@ class PeerToTrackerConn(conn.Conn):
                 if pkt.status == STATUS_OK and torrent_hash in self.controller.active_torrents.keys():
                     self.controller.active_torrents[
                         torrent_hash].status = controller.TorrentStatus.TORRENT_STATUS_REGISTERED
+            elif req_type == TYPE_REQUEST_PEERS:
+                pkt: ACKRequestPeerPacket
+                torrent_hash: str = state
+                self.controller.active_torrents[torrent_hash].peer_list.extend(pkt.addresses)
+            if req_type in self.waiter:
+                with self.waiter[req_type]:
+                    self.waiter[req_type].notify()
+                del self.waiter[req_type]
 
     def notify(self, my_addr: IPPort):
         notify_req = NotifyPacket()
         notify_req.ipv4_address = ipv4_to_int(my_addr[0])
         notify_req.udp_port = my_addr[1]
         self.controller.tracker_status = controller.TrackerStatus.NOTIFYING
-        self.send_request(notify_req, None)
+        self.send_request(notify_req, None, True)
+        self.wait(notify_req.type)
 
     def register(self, torrent: Torrent):
         self.controller: controller.PeerController
         req = RegisterPacket()
         req.torrent_hash = hexstr_to_bytes(torrent.torrent_hash)
         req.uuid = self.controller.tracker_uuid
-        self.send_request(req, torrent.torrent_hash)
+        self.send_request(req, torrent.torrent_hash, True)
+        self.wait(req.type)
+
+    def retrieve_peer_lists(self, torrent_hash: str):
+        # Blocking wait for peer lists
+        self.controller: controller.PeerController
+        req = RequestPeerPacket()
+        req.torrent_hash = hexstr_to_bytes(torrent_hash)
+        self.send_request(req, torrent_hash, True)
+        self.wait(req.type)

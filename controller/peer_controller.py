@@ -35,6 +35,9 @@ class PeerController(controller.Controller):
         self.active_torrents[torrent.torrent_hash] = controller.TorrentController(torrent)
         self.tracker_conn.register(torrent)
 
+    def retrieve_peer_list(self, torrent_hash: str):
+        self.tracker_conn.retrieve_peer_lists(torrent_hash)
+
     def close(self):
         self.tracker_conn.close()
         for con in self.peer_conns:

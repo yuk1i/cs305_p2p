@@ -17,9 +17,9 @@ class TrackerTest(unittest.TestCase):
 
         # Test Notify
         peer.notify_tracker()
-        while peer.tracker_status != TrackerStatus.NOTIFIED:
-            time.sleep(0.05)
-        time.sleep(1)
+        # while peer.tracker_status != TrackerStatus.NOTIFIED:
+        #     time.sleep(0.05)
+        # time.sleep(1)
         self.assertEqual((peer.tracker_uuid, peer_addr), tracker.peers[0])
 
         # Test Register
@@ -29,11 +29,28 @@ class TrackerTest(unittest.TestCase):
         self.assertEqual(peer.torrent_list[0], tt)
         self.assertEqual(peer.active_torrents[tt.torrent_hash].torrent, tt)
         # wait response
-        while peer.active_torrents[tt.torrent_hash].status != TorrentStatus.TORRENT_STATUS_REGISTERED:
-            time.sleep(0.05)
+        # while peer.active_torrents[tt.torrent_hash].status != TorrentStatus.TORRENT_STATUS_REGISTERED:
+        #     time.sleep(0.05)
         self.assertIn(peer.local_addr, tracker.torrents[tt.torrent_hash])
-        tracker.close()
+
+        # Test retrieve peer list
+        p2_addr = ('127.0.0.1', 30086)
+        p2 = PeerController(Proxy(0, 0, 30086), p2_addr, tracker_addr)
+        p2.notify_tracker()
+        p2.add_torrent(tt)
+        p2.register_torrent(tt)
+        self.assertIn(p2.local_addr, tracker.torrents[tt.torrent_hash])
+
+        p2.retrieve_peer_list(tt.torrent_hash)
+
+        print(p2.active_torrents[tt.torrent_hash].peer_list)
+
+        self.assertIn(peer_addr, p2.active_torrents[tt.torrent_hash].peer_list)
+        self.assertIn(p2.local_addr, p2.active_torrents[tt.torrent_hash].peer_list)
+
         peer.close()
+        p2.close()
+        tracker.close()
 
         for thread in threading.enumerate():
             print(thread.name)

@@ -49,3 +49,10 @@ class TrackerConn(conn.Conn):
                 self.controller.remove_peer(pkt.uuid)
             ack.status = STATUS_OK
             self.send_packet(ack)
+        elif pkt.type == TYPE_REQUEST_PEERS:
+            pkt: RequestPeerPacket
+            ack = ACKRequestPeerPacket()
+            ack.set_request(pkt)
+            ack.addresses.extend(self.controller.torrents[bytes_to_hexstr(pkt.torrent_hash)])
+            ack.status = STATUS_OK
+            self.send_packet(ack)
