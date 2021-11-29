@@ -24,9 +24,7 @@ class TrackerTest(unittest.TestCase):
 
         # Test Register
         tt = Torrent.generate_torrent("test_torrent", "A Test Torrent")
-        peer.add_torrent(tt)
         peer.register_torrent(tt)
-        self.assertEqual(peer.torrent_list[0], tt)
         self.assertEqual(peer.active_torrents[tt.torrent_hash].torrent, tt)
         # wait response
         # while peer.active_torrents[tt.torrent_hash].status != TorrentStatus.TORRENT_STATUS_REGISTERED:
@@ -37,7 +35,6 @@ class TrackerTest(unittest.TestCase):
         p2_addr = ('127.0.0.1', 30086)
         p2 = PeerController(Proxy(0, 0, 30086), p2_addr, tracker_addr)
         p2.notify_tracker()
-        p2.add_torrent(tt)
         p2.register_torrent(tt)
         self.assertIn(p2.local_addr, tracker.torrents[tt.torrent_hash])
 
@@ -54,6 +51,29 @@ class TrackerTest(unittest.TestCase):
 
         self.assertNotIn(p2.local_addr, peer.active_torrents[tt.torrent_hash].peer_list)
         self.assertIn(peer.local_addr, peer.active_torrents[tt.torrent_hash].peer_list)
+
+        # Register p2 again
+        p2.register_torrent(tt)
+        peer.retrieve_peer_list(tt.torrent_hash)
+
+        self.assertIn(peer.local_addr, peer.active_torrents[tt.torrent_hash].peer_list)
+        self.assertIn(p2.local_addr, peer.active_torrents[tt.torrent_hash].peer_list)
+
+        torrent2 = Torrent.generate_torrent("test_torrent/qwq.txt", "test 2")
+        p2.register_torrent(torrent2)
+
+        self.assertIn(p2.local_addr, tracker.torrents[torrent2.torrent_hash])
+
+        p2.close_from_tracker()
+
+        self.assertNotIn(p2.local_addr, tracker.torrents[torrent2.torrent_hash])
+        self.assertNotIn(p2.local_addr, tracker.torrents[tt.torrent_hash])
+
+        peer.retrieve_peer_list(tt.torrent_hash)
+        self.assertNotIn(p2.local_addr, peer.active_torrents[tt.torrent_hash].peer_list)
+        peer.register_torrent(torrent2)
+        peer.retrieve_peer_list(torrent2.torrent_hash)
+        self.assertNotIn(p2.local_addr, peer.active_torrents[torrent2.torrent_hash].peer_list)
 
         peer.close()
         p2.close()

@@ -14,7 +14,6 @@ class PeerController(controller.Controller):
     def __init__(self, pxy: proxy.Proxy, my_addr: IPPort, tracker_addr: IPPort):
         super(PeerController, self).__init__(pxy)
         self.local_addr = my_addr
-        self.torrent_list: List[Torrent] = list()
         self.active_torrents: Dict[str, controller.TorrentController] = dict()
         self.peer_conns: List[conn.P2PConn] = list()
         self.tracker_addr = tracker_addr
@@ -28,10 +27,9 @@ class PeerController(controller.Controller):
             return
         self.tracker_conn.notify(self.local_addr)
 
-    def add_torrent(self, torrent: Torrent):
-        self.torrent_list.append(torrent)
-
     def register_torrent(self, torrent: Torrent):
+        if torrent.torrent_hash in self.active_torrents:
+            return
         self.active_torrents[torrent.torrent_hash] = controller.TorrentController(torrent)
         self.tracker_conn.register(torrent)
 
@@ -43,6 +41,12 @@ class PeerController(controller.Controller):
             return
         self.active_torrents[torrent_hash].close()
         self.tracker_conn.cancel(torrent_hash)
+        del self.active_torrents[torrent_hash]
+
+    def close_from_tracker(self):
+        for active in self.active_torrents.values():
+            active.close()
+        self.tracker_conn.close_from_tracker()
 
     def close(self):
         self.tracker_conn.close()

@@ -60,6 +60,9 @@ class TrackerController(controller.Controller):
         for con in self.conns:
             if con.remote_addr == addr:
                 con.close()
+        for peers in self.torrents.values():
+            if addr in peers:
+                peers.remove(addr)
         self.peers.remove((uuid, addr))
 
     def register_torrent(self, uuid: int, torrent_hash: str) -> bool:

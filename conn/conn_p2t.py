@@ -33,6 +33,7 @@ class PeerToTrackerConn(conn.Conn):
             elif req_type == TYPE_REQUEST_PEERS:
                 pkt: ACKRequestPeerPacket
                 torrent_hash: str = state
+                self.controller.active_torrents[torrent_hash].peer_list.clear()
                 self.controller.active_torrents[torrent_hash].peer_list.extend(pkt.addresses)
             elif req_type == TYPE_CANCEL:
                 pkt: ACKCancelPacket
@@ -40,6 +41,8 @@ class PeerToTrackerConn(conn.Conn):
                 if torrent_hash in self.controller.active_torrents:
                     self.controller.active_torrents[
                         torrent_hash].status = controller.TorrentStatus.TORRENT_STATUS_CANCELED
+            elif req_type == TYPE_CLOSE:
+                pass
             if req_type in self.waiter:
                 with self.waiter[req_type]:
                     self.waiter[req_type].notify()
@@ -75,4 +78,11 @@ class PeerToTrackerConn(conn.Conn):
         req.uuid = self.controller.tracker_uuid
         req.torrent_hash = hexstr_to_bytes(torrent_hash)
         self.send_request(req, torrent_hash, True)
+        self.wait(req.type)
+
+    def close_from_tracker(self):
+        self.controller: controller.PeerController
+        req = ClosePacket()
+        req.uuid = self.controller.tracker_uuid
+        self.send_request(req, None, True)
         self.wait(req.type)

@@ -35,7 +35,8 @@ class Conn:
         self.controller.socket.unregister(self.remote_addr)
         # unregister itself and quit
         self.__recv_queue__.put((EVTYPE_END, None))
-        self.__recv_thread__.join()
+        if self.__recv_thread__ is not threading.current_thread():
+            self.__recv_thread__.join()
 
     def __run__(self):
         while True:
