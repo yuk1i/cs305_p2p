@@ -44,9 +44,9 @@ class SocketManager:
         con.socket = self
         self.mapper[addr] = con
 
-    def unregister(self, con: conn.Conn):
-        if con in self.mapper.values():
-            con.close()
+    def unregister(self, addr: IPPort):
+        if addr in self.mapper.keys():
+            del self.mapper[addr]
 
     def on_pkt_recv(self, src_addr: IPPort, pkt: BasePacket):
         iaddr = IPPort(src_addr[0], src_addr[1])
@@ -74,8 +74,9 @@ class SocketManager:
             peer.recv_packet(pkt)
 
     def close(self):
-        for con in self.mapper.values():
-            self.unregister(con)
+        for remote_addr in self.mapper.keys():
+            self.unregister(remote_addr)
+            self.mapper[remote_addr].close()
         self.proxy.close()
         self.thread.join()
 

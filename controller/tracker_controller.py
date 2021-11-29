@@ -40,7 +40,7 @@ class TrackerController(controller.Controller):
         for tp in self.peers:
             if tp[0] == uuid or tp[1] == addr:
                 return tp[0], tp[1]
-        return None, None
+        return 0, None
 
     def new_peer(self, peer_addr: IPPort) -> int:
         """
@@ -57,6 +57,9 @@ class TrackerController(controller.Controller):
 
     def remove_peer(self, uuid):
         _, addr = self.get_peer(uuid=uuid)
+        for con in self.conns:
+            if con.remote_addr == addr:
+                con.close()
         self.peers.remove((uuid, addr))
 
     def register_torrent(self, uuid: int, torrent_hash: str) -> bool:
@@ -83,4 +86,9 @@ class TrackerController(controller.Controller):
         print("[Tracker] Peer {} cancel torrent {}".format(addr, torrent_hash))
 
     def close(self):
+        for con in self.conns:
+            con.close()
+        self.conns.clear()
+        self.peers.clear()
+        self.torrents.clear()
         self.socket.close()
