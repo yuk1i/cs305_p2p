@@ -71,9 +71,6 @@ class PeerToTrackerConn(conn.Conn):
 
     def cancel(self, torrent_hash: str):
         self.controller: controller.PeerController
-        if torrent_hash not in self.controller.active_torrents:
-            return
-        self.controller.active_torrents[torrent_hash].close()
         req = CancelPacket()
         req.uuid = self.controller.tracker_uuid
         req.torrent_hash = hexstr_to_bytes(torrent_hash)

@@ -39,6 +39,9 @@ class PeerController(controller.Controller):
         self.tracker_conn.retrieve_peer_lists(torrent_hash)
 
     def cancel(self, torrent_hash: str):
+        if torrent_hash not in self.active_torrents:
+            return
+        self.active_torrents[torrent_hash].close()
         self.tracker_conn.cancel(torrent_hash)
 
     def close(self):
