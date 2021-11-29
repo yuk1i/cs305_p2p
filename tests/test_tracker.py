@@ -48,6 +48,13 @@ class TrackerTest(unittest.TestCase):
         self.assertIn(peer_addr, p2.active_torrents[tt.torrent_hash].peer_list)
         self.assertIn(p2.local_addr, p2.active_torrents[tt.torrent_hash].peer_list)
 
+        p2.cancel(tt.torrent_hash)
+
+        peer.retrieve_peer_list(tt.torrent_hash)
+
+        self.assertNotIn(p2.local_addr, peer.active_torrents[tt.torrent_hash].peer_list)
+        self.assertIn(peer.local_addr, peer.active_torrents[tt.torrent_hash].peer_list)
+
         peer.close()
         p2.close()
         tracker.close()

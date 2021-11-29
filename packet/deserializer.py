@@ -10,6 +10,10 @@ def get_packet_by_type(itype: int, reserved: int = 0) -> BasePacket:
             return ACKRegisterPacket()
         if req_type == TYPE_REQUEST_PEERS:
             return ACKRequestPeerPacket()
+        if req_type == TYPE_CANCEL:
+            return ACKCancelPacket()
+        if req_type == TYPE_CLOSE:
+            return ACKClosePacket()
 
     if itype == TYPE_NOTIFY:
         return NotifyPacket()
@@ -17,6 +21,10 @@ def get_packet_by_type(itype: int, reserved: int = 0) -> BasePacket:
         return RegisterPacket()
     if itype == TYPE_REQUEST_PEERS:
         return RequestPeerPacket()
+    if itype == TYPE_CANCEL:
+        return CancelPacket()
+    if itype == TYPE_CLOSE:
+        return ClosePacket()
 
 
 def deserialize_packet(data: bytes) -> BasePacket:

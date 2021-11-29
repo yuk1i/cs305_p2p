@@ -20,3 +20,6 @@ class TorrentController:
         print("[TorrentCtrl] {} Peer List updated: {}".format(self.torrent_hash, peers))
         self.peer_list = peers
         pass
+
+    def close(self):
+        pass
