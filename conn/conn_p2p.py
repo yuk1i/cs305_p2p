@@ -5,7 +5,7 @@ from typing import Tuple
 import controller
 from conn import Conn
 from packet.p2p_packet import *
-from utils import IPPort, hexstr_to_bytes
+from utils import IPPort, hexstr_to_bytes, bytes_to_hexstr
 
 
 class P2PConn(Conn):
@@ -20,9 +20,47 @@ class P2PConn(Conn):
         self.controller: controller.PeerController
         # TODO: Handle requests and replies here
         if pkt.type == TYPE_ACK:
-            pass
+            req_type = pkt.reversed & MASK_REVERSED
+            state = self.retrieve_state(pkt.identifier)
+            if req_type == TYPE_REQUEST_TORRENT:
+                print("[CP2P] Torrent data available")
+                pkt: ACKRequestForTorrent
+                torrent_hash: str = state
+                if pkt.status == STATUS_OK and torrent_hash in self.controller.active_torrents:
+                    self.controller.active_torrents[torrent_hash]. \
+                        on_torrent_chunk_received(pkt.data, pkt.start_at, pkt.length, pkt.total_length)
+            if req_type in self.waiter:
+                with self.waiter[req_type]:
+                    self.waiter[req_type].notify()
+                del self.waiter[req_type]
         else:
             # Request
+            # Receive other peers' request
+            req_type = pkt.type
+            if req_type == TYPE_REQUEST_TORRENT:
+                print("[CP2P] Other is requesting torrent data")
+                pkt: RequestForTorrent
+                str_hash = bytes_to_hexstr(pkt.torrent_hash)
+                ack = ACKRequestForTorrent()
+                ack.set_request(pkt)
+                if str_hash not in self.controller.active_torrents:
+                    ack.status = STATUS_NOT_FOUND
+                    self.send_packet(ack)
+                    return
+                if not self.controller.active_torrents[str_hash].torrent.__torrent_file_downloaded__:
+                    ack.status = STATUS_NOT_READY
+                    self.send_packet(ack)
+                # I have this torrent
+                ack.status = STATUS_OK
+                bdata = self.controller.active_torrents[str_hash].torrent.generate_binary()
+                start = min(len(bdata), pkt.since)
+                end = min(len(bdata), pkt.since + pkt.expectedLength)
+                bdata = bdata[start:end]
+                ack.data = bdata
+                ack.start_at = start
+                ack.length = end - start
+                ack.total_length = len(bdata)
+                self.send_packet(ack)
             pass
 
     def last_active(self):
@@ -46,10 +84,10 @@ class P2PConn(Conn):
         """
         pass
 
-    def request_torrent_chunk(self, torrent_hash: str, start: int = 0, end: int = 0xFFFFFFFF) -> bytes:
+    def request_torrent_chunk(self, torrent_hash: str, start: int = 0, end: int = 0xFFFFFFFF):
         req = RequestForTorrent()
         req.torrent_hash = hexstr_to_bytes(torrent_hash)
         req.since = start
         req.expectedLength = end
-        self.send_request(req, None, True)
+        self.send_request(req, torrent_hash, True)
         self.wait(req.type)

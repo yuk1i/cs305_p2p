@@ -24,9 +24,6 @@ class TrackerController(controller.Controller):
         self.conns.append(con)
         return con
 
-    def create_conn(self, target_addr: IPPort) -> conn.Conn:
-        return super().create_conn(target_addr)
-
     def peer_exist(self, uuid: int) -> bool:
         return self.get_peer(uuid=uuid) is not None
 

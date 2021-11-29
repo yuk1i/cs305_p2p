@@ -20,8 +20,5 @@ class Controller:
         print("[Controller] : new Conn from %s:%s" % src_addr)
         return None
 
-    def create_conn(self, target_addr: IPPort) -> conn.Conn:
-        pass
-
     def close(self):
         pass

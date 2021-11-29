@@ -21,6 +21,11 @@ class PeerController(controller.Controller):
         self.tracker_status: int = controller.TrackerStatus.NOT_NOTIFIED
         self.tracker_uuid: int = 0
 
+    def accept_conn(self, src_addr: IPPort) -> conn.Conn:
+        con = conn.P2PConn(src_addr, self)
+        self.peer_conns[src_addr] = con
+        return con
+
     def notify_tracker(self):
         if self.tracker_status != controller.TrackerStatus.NOT_NOTIFIED:
             print("[P2T] tracker status: %s" % self.tracker_status)
@@ -49,8 +54,8 @@ class PeerController(controller.Controller):
             active.close()
         self.tracker_conn.close_from_tracker()
 
-    def start_download_torrent(self, torrent_hash: str, save_dir: str):
-        self.active_torrents[torrent_hash].start_download(save_dir)
+    def start_download(self, torrent_hash: str, save_dir: str, torrent_file_path: str):
+        self.active_torrents[torrent_hash].start_download(save_dir, torrent_file_path)
 
     def create_peer_conn(self, peer_addr: IPPort):
         if peer_addr not in self.peer_conns:
@@ -65,5 +70,5 @@ class PeerController(controller.Controller):
     def close(self):
         self.tracker_conn.close()
         for con in self.peer_conns.values():
-            self.socket.unregister(con.remote_addr)
+            con.close()
         self.socket.close()

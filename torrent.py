@@ -93,11 +93,13 @@ class Torrent(MyDict):
         with open(file_path, "w") as f:
             f.write(json.dumps(self))
 
-    def generate_binary(self):
+    def generate_binary(self) -> bytes:
         if not self.__torrent_file_downloaded__:
             raise Exception("not download yet")
-        json_str = json.dumps(json_obj, sort_keys=True)
-        self.__binary__ = json_str.encode(encoding='utf-8')
+        if not self.__binary__:
+            json_str = json.dumps(self, sort_keys=True)
+            self.__binary__ = json_str.encode(encoding='utf-8')
+        return self.__binary__
 
     def try_decode_from_binary(self, binary: bytes):
         json_str = binary.decode(encoding='utf-8')

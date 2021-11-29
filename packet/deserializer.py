@@ -1,4 +1,5 @@
 from packet.p2t_packet import *
+from packet.p2p_packet import *
 
 
 def get_packet_by_type(itype: int, reserved: int = 0) -> BasePacket:
@@ -14,6 +15,12 @@ def get_packet_by_type(itype: int, reserved: int = 0) -> BasePacket:
             return ACKCancelPacket()
         if req_type == TYPE_CLOSE:
             return ACKClosePacket()
+        if req_type == TYPE_REQUEST_TORRENT:
+            return ACKRequestForTorrent()
+        if req_type == TYPE_REQUEST_CHUNK:
+            return ACKRequestChunk()
+        if req_type == TYPE_UPDATE_CHUNK_INFO:
+            return ACKUpdateChunkInfo()
 
     if itype == TYPE_NOTIFY:
         return NotifyPacket()
@@ -25,6 +32,12 @@ def get_packet_by_type(itype: int, reserved: int = 0) -> BasePacket:
         return CancelPacket()
     if itype == TYPE_CLOSE:
         return ClosePacket()
+    if itype == TYPE_REQUEST_TORRENT:
+        return RequestForTorrent()
+    if itype == TYPE_REQUEST_CHUNK:
+        return RequestChunk()
+    if itype == TYPE_UPDATE_CHUNK_INFO:
+        return UpdateChunkInfo()
 
 
 def deserialize_packet(data: bytes) -> BasePacket:

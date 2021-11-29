@@ -28,14 +28,23 @@ class ACKRequestForTorrent(ACKPacket):
         super(ACKRequestForTorrent, self).__init__()
         self.reassemble = ReAssembleHeader()
         self.status = STATUS_NOT_SET
+        self.start_at = 0
+        self.length = 0
+        self.total_length = 0
         self.data: bytes = b''
 
     def __pack_internal__(self, w: ByteWriter):
         w.write_int(self.status)
+        w.write_int(self.start_at)
+        w.write_int(self.length)
+        w.write_int(self.total_length)
         w.write_bytes(self.data)
 
     def __unpack_internal__(self, r: ByteReader):
         self.status = r.read_int()
+        self.start_at = r.read_int()
+        self.length = r.read_int()
+        self.total_length = r.read_int()
         self.data = r.read_bytes(r.remain())
 
 
@@ -57,9 +66,9 @@ class UpdateChunkInfo(BasePacket):
             self.seq_ids.append(r.read_int())
 
 
-class ACKRequestChunkInfo(ACKPacket):
+class ACKUpdateChunkInfo(ACKPacket):
     def __init__(self):
-        super(ACKRequestChunkInfo, self).__init__()
+        super(ACKUpdateChunkInfo, self).__init__()
         self.reassemble = ReAssembleHeader()
         self.status: int = STATUS_NOT_SET
         self.seq_ids: List[int] = list()

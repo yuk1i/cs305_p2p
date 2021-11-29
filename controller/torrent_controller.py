@@ -21,6 +21,7 @@ class TorrentController:
         self.save_dir: str = ""
         self.torrent_file_path: str = ""
         self.thread = threading.Thread(target=self.__run__)
+        self.torrent_binary: bytearray = None
 
     def __run__(self):
         # Request peers first
@@ -38,16 +39,19 @@ class TorrentController:
         #       and start downloading every data block
         # TODO: Improvement here: Load torrent from self.torrent_save_path and check its hash
         while not self.torrent.__torrent_file_downloaded__:
+            print("start downloading")
             # Download torrent files from peers
             p2p_conn = self.controller.get_peer_conn(self.peer_list[0])
             # TODO: Improvements here
-            binary = p2p_conn.request_torrent_chunk(self.torrent_hash)
+            p2p_conn.request_torrent_chunk(self.torrent_hash)
             # TODO: combine binary data, call Torrent.
             try:
-                self.torrent.try_decode_from_binary(binary)
+                self.torrent.try_decode_from_binary(self.torrent_binary)
                 self.torrent.save_to_file(self.torrent_file_path)
+                self.torrent.__torrent_file_downloaded__ = True
             except Exception as e:
                 print("[TC] Errored when trying to decode torrent from binary")
+        print("[TC] Successfully download torrent file, size: %s" % (len(self.torrent_binary)))
         pass
 
     def on_peer_list_update(self, peers: List[IPPort]):
@@ -57,10 +61,17 @@ class TorrentController:
         self.peer_list.remove(self.controller.local_addr)
         pass
 
-    def close(self):
-        pass
+    def on_torrent_chunk_received(self, bdata: bytes, start: int, end: int, total_length: int):
+        if not self.torrent_binary:
+            self.torrent_binary = bytearray(total_length)
+        self.torrent_binary[start: start + end] = bdata
 
-    def start_download(self, save_dir: str, torrent_file_path):
+    def close(self):
+        if self.thread.is_alive():
+            self.thread.join()
+        # TODO: Exit
+
+    def start_download(self, save_dir: str, torrent_file_path: str):
         if self.torrent.__torrent_file_downloaded__:
             return
         if self.status != controller.TorrentStatus.TORRENT_STATUS_REGISTERED:
@@ -69,7 +80,7 @@ class TorrentController:
             raise Exception("Notify tracker first")
         self.status = controller.TorrentStatus.TORRENT_STATUS_DOWNLOADING
         self.save_dir = save_dir
-        self.torrent_file_path = self.torrent_file_path
+        self.torrent_file_path = torrent_file_path
         self.thread.start()
 
     def wait_downloaded(self):
