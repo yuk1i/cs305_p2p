@@ -28,6 +28,7 @@ class Conn:
         self.__recv_thread__ = threading.Thread(target=self.__run__)
         self.__recv_thread__.name = "Conn Recv Thread - Peer {}".format(self.remote_addr)
         self.__recv_thread__.start()
+        self.waiter: Dict[int, threading.Condition] = dict()
         pass
 
     def close(self):
@@ -73,8 +74,16 @@ class Conn:
         del self.__request_data__[identifier]
         return data
 
-    def send_request(self, packet: BasePacket, state: Any) -> int:
+    def send_request(self, packet: BasePacket, state: Any, waiter: bool = False) -> int:
         packet.identifier = self.new_identifier()
         self.put_state(packet.identifier, state)
+        if waiter:
+            if packet.type not in self.waiter:
+                self.waiter[packet.type] = threading.Condition()
         self.send_packet(packet)
         return packet.identifier
+
+    def wait(self, itype: int):
+        if itype in self.waiter:
+            with self.waiter[itype]:
+                self.waiter[itype].wait()
