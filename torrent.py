@@ -72,6 +72,7 @@ class Torrent(MyDict):
         self.files: List[FileObject] = list()
         self.__file_index__ = list()
         self.__block_index__ = list()
+        self.torrent_file_downloaded = True
 
     def check_torrent_hash(self) -> bool:
         current_hash = copy.deepcopy(self.torrent_hash)
@@ -152,3 +153,10 @@ class Torrent(MyDict):
 
     def get_file(self, seq_number: int) -> FileObject:
         pass
+
+    @staticmethod
+    def create_dummy_torrent(torrent_hash: str) -> Torrent:
+        t = Torrent()
+        t.torrent_hash = torrent_hash
+        t.torrent_file_downloaded = False
+        return t

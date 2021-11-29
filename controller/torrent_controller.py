@@ -15,6 +15,7 @@ class TorrentController:
         self.chunk_status: List[bool] = list()
         self.peer_list: List[IPPort] = list()
         self.tracker_addr: IPPort = ("", 0)
+        self.save_dir: str = ""
 
     def on_peer_list_update(self, peers: List[IPPort]):
         print("[TorrentCtrl] {} Peer List updated: {}".format(self.torrent_hash, peers))
@@ -23,3 +24,10 @@ class TorrentController:
 
     def close(self):
         pass
+
+    def start_download(self, save_dir: str):
+        if self.status != controller.TorrentStatus.TORRENT_STATUS_REGISTERED:
+            raise Exception("Register torrent first")
+        self.status = controller.TorrentStatus.TORRENT_STATUS_DOWNLOADING
+        self.save_dir = save_dir
+

@@ -48,6 +48,9 @@ class PeerController(controller.Controller):
             active.close()
         self.tracker_conn.close_from_tracker()
 
+    def start_download_torrent(self, torrent_hash: str, save_dir: str):
+        self.active_torrents[torrent_hash].start_download(save_dir)
+
     def close(self):
         self.tracker_conn.close()
         for con in self.peer_conns:
