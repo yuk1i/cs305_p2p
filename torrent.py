@@ -107,6 +107,7 @@ class Torrent(MyDict):
         self.name = tt.name
         self.files = tt.files
         self.block_size = tt.block_size
+        self.__torrent_file_downloaded__ = True
 
     @staticmethod
     def load_from_file(file_path: str) -> Torrent:

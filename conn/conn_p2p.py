@@ -5,7 +5,7 @@ from typing import Tuple
 import controller
 from conn import Conn
 from packet.p2p_packet import *
-from utils import IPPort
+from utils import IPPort, hexstr_to_bytes
 
 
 class P2PConn(Conn):
@@ -18,6 +18,7 @@ class P2PConn(Conn):
 
     def __handler__(self, pkt: BasePacket):
         self.controller: controller.PeerController
+        # TODO: Handle requests and replies here
         if pkt.type == TYPE_ACK:
             pass
         else:
@@ -44,3 +45,11 @@ class P2PConn(Conn):
         :return:
         """
         pass
+
+    def request_torrent_chunk(self, torrent_hash: str, start: int = 0, end: int = 0xFFFFFFFF) -> bytes:
+        req = RequestForTorrent()
+        req.torrent_hash = hexstr_to_bytes(torrent_hash)
+        req.since = start
+        req.expectedLength = end
+        self.send_request(req, None, True)
+        self.wait(req.type)
