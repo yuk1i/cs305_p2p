@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import copy
+import lzma
 import json
 import os
 import pprint
@@ -98,11 +99,11 @@ class Torrent(MyDict):
             raise Exception("not download yet")
         if not self.__binary__:
             json_str = json.dumps(self, sort_keys=True)
-            self.__binary__ = json_str.encode(encoding='utf-8')
+            self.__binary__ = lzma.compress(json_str.encode(encoding='utf-8'))
         return self.__binary__
 
     def try_decode_from_binary(self, binary: bytes):
-        json_str = binary.decode(encoding='utf-8')
+        json_str = lzma.decompress(binary).decode(encoding='utf-8')
         tt = Torrent.load_from_content(json_str)
         if tt.torrent_hash != self.torrent_hash:
             raise Exception("Not the same torrent")
