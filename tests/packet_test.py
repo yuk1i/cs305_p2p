@@ -64,20 +64,16 @@ class MyTestCase(unittest.TestCase):
         req = RequestPeerPacket()
         req.identifier = bytes_to_int(random_short())
         req.torrent_hash = random_bytes(32)
+        ack = ACKRequestPeerPacket()
+        ack.set_request(req)
+        ack.status = STATUS_OK
         lst: List[IPPort] = list()
         for i in range(1, 205):
             lst.append((int_to_ipv4(bytes_to_int(random_int())), bytes_to_int(random_short())))
-        print(lst)
-        ass = conn.Assembler(TYPE_ACK, TYPE_REQUEST_PEERS, lst, mtu=200)
-        ret = ass.boxing(req)
-        bs = list()
+        ack.addresses = lst
+        ass = conn.Assembler(ack, mtu=100)
+        bs = ass.boxing()
         total_data = ""
-        for assed_ack in ret:
-            bb = assed_ack.pack()
-            bs.append(bb)
-            data = print_packet(bb)
-            print(bytes_to_hexstr(data))
-            total_data += bytes_to_hexstr(data)
         shuffle(bs)
         ra = ReAssembler(bs[0][0], bs[0][1] & MASK_REVERSED)
         print(total_data)

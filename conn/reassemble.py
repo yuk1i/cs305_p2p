@@ -10,17 +10,6 @@ from packet.p2t_packet import *
 from utils import bytes_utils
 
 
-def get_entry_size(itype, rev) -> int:
-    """
-    How many bytes does a partition need
-    :return:
-    """
-    if itype == TYPE_ACK and rev == TYPE_REQUEST_PEERS:
-        return 6
-    else:
-        return 1
-
-
 class ReAssembler:
     """
     ReAssemble Packets into one packet object
@@ -29,7 +18,6 @@ class ReAssembler:
     def __init__(self, itype: int, rev: int):
         self.type: int = itype
         self.rev = rev & MASK_REVERSED
-        self.entry_size = get_entry_size(self.type, self.rev)
         self.data = None
         self.done = False
         self.intervals: List[List[int]] = list()
@@ -44,10 +32,6 @@ class ReAssembler:
         :param packet:
         :return:
         """
-        if self.entry_size <= 0:
-            self.data = pkt
-            self.done = True
-            return True
         start = bytes_to_int(pkt.__data__[4:8])
         length = bytes_to_int(pkt.__data__[8:12])
         total_length = bytes_to_int(pkt.__data__[12:16])
@@ -83,40 +67,35 @@ class ReAssembler:
 
 
 class Assembler:
-    def __init__(self, itype, rev, raw_data: List[Any] | bytes, mtu: int = 1460):
-        self.type = itype
-        self.rev = rev
-        self.raw_data = raw_data
+    def __init__(self, pkt: BasePacket, mtu: int = 1460):
+        self.raw_data = bytearray()
+        w = ByteWriter(self.raw_data)
+        pkt.__pack_internal__(w)
+        pkt.pack_header()
+        self.header: bytes = pkt.__data__[0:4]
         self.mtu = mtu
 
-    def boxing(self, request: BasePacket = None) -> List[BasePacket]:
+    def boxing(self) -> List[bytes]:
         # if self.type == TYPE_ACK and self.rev == TYPE_REQUEST_PEERS:
-        entry_size = get_entry_size(self.type, self.rev)
 
         raw = copy.deepcopy(self.raw_data)
-        ret: List[BasePacket] = list()
-        max_p = math.floor(self.mtu / entry_size)
+        ret: List[bytes] = list()
+        max_p = self.mtu
         cnt: int = 0
-        total_bytes: int = len(self.raw_data) * entry_size
+        total_bytes: int = len(self.raw_data)
         while len(raw) > 0:
             packed_data = raw[:max_p]
             raw = raw[max_p:]
-            pkt = packet.deserializer.get_packet_by_type(self.type, self.rev)
-            if self.type == TYPE_ACK:
-                pkt.set_request(request)
-            pkt.reassemble = ReAssembleHeader()
-            pkt.reassemble.total_length = total_bytes
-            pkt.reassemble.start = cnt * entry_size
-            pkt.reassemble.length = len(packed_data) * entry_size
-            self.pack_once(packed_data, pkt)
-            ret.append(pkt)
+            ba = bytearray()
+            w = ByteWriter(ba)
+            w.write_bytes(self.header)
+            total_length = total_bytes
+            start = cnt
+            length = len(packed_data)
+            w.write_int(start)
+            w.write_int(length)
+            w.write_int(total_length)
+            w.write_bytes(packed_data)
+            ret.append(ba)
             cnt += len(packed_data)
         return ret
-
-    def pack_once(self, packed_data: List[Any] | bytes, pkt: BasePacket):
-        if self.type == TYPE_ACK and self.rev == TYPE_REQUEST_PEERS:
-            pkt: ACKRequestPeerPacket
-            packed_data: List[IPPort]
-            pkt.addresses.extend(packed_data)
-        else:
-            pkt.data = packed_data

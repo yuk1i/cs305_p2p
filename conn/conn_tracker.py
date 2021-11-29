@@ -53,6 +53,7 @@ class TrackerConn(conn.Conn):
             pkt: RequestPeerPacket
             ack = ACKRequestPeerPacket()
             ack.set_request(pkt)
+            ack.status = STATUS_OK
             ack.addresses.extend(self.controller.torrents[bytes_to_hexstr(pkt.torrent_hash)])
             ack.status = STATUS_OK
             self.send_packet(ack)

@@ -76,13 +76,16 @@ class ACKRequestPeerPacket(ACKPacket):
     def __init__(self):
         super(ACKRequestPeerPacket, self).__init__()
         self.reassemble = ReAssembleHeader()
+        self.status = STATUS_NOT_SET
         self.addresses: List[IPPort] = list()
 
     def __pack_internal__(self, w: ByteWriter):
+        w.write_int(self.status)
         for tp in self.addresses:
             w.write_bytes(int_to_bytes(utils.ipport_to_int(tp), 6))
 
     def __unpack_internal__(self, r: ByteReader):
+        self.status = r.read_int()
         while r.remain() >= 6:
             b = r.read_bytes(6)
             self.addresses.append((utils.int_to_ipv4(bytes_to_int(b[0:4])), bytes_to_int(b[4:6])))

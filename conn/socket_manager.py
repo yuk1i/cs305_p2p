@@ -19,6 +19,7 @@ class SocketManager:
         self.proxy = pxy
         self.controller = ctrl
         self.mapper: Dict[IPPort, conn.Conn] = dict()
+        self.mtu = 1460
         # self.peers: List[ConnManager] = list()
         self.reassemblers: Dict[int, conn.ReAssembler] = dict()
         self.thread = threading.Thread(target=self.__run__)
@@ -34,9 +35,14 @@ class SocketManager:
             self.on_pkt_recv(src_addr, pkt)
 
     def send_packet(self, pkt: BasePacket, dst_addr: IPPort):
-        data = pkt.pack()
-        self.proxy.sendto(data, dst_addr)
-        # non blocking
+        if pkt.reassemble.enabled:
+            pkts = conn.Assembler(pkt, self.mtu).boxing()
+            for pdata in pkts:
+                self.proxy.sendto(pdata, dst_addr)
+        else:
+            data = pkt.pack()
+            self.proxy.sendto(data, dst_addr)
+            # non blocking
 
     def register(self, addr: IPPort, con: conn.Conn):
         if addr in self.mapper.keys():

@@ -33,7 +33,7 @@ class PeerToTrackerConn(conn.Conn):
             elif req_type == TYPE_REQUEST_PEERS:
                 pkt: ACKRequestPeerPacket
                 torrent_hash: str = state
-                if torrent_hash in self.controller.active_torrents:
+                if torrent_hash in self.controller.active_torrents and pkt.status == STATUS_OK:
                     self.controller.active_torrents[torrent_hash].on_peer_list_update(pkt.addresses)
             elif req_type == TYPE_CANCEL:
                 pkt: ACKCancelPacket
