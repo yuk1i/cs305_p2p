@@ -72,7 +72,8 @@ class Torrent(MyDict):
         self.files: List[FileObject] = list()
         self.__file_index__ = list()
         self.__block_index__ = list()
-        self.torrent_file_downloaded = True
+        self.__torrent_file_downloaded__ = True
+        self.__binary__: bytes = b''
 
     def check_torrent_hash(self) -> bool:
         current_hash = copy.deepcopy(self.torrent_hash)
@@ -92,11 +93,30 @@ class Torrent(MyDict):
         with open(file_path, "w") as f:
             f.write(json.dumps(self))
 
+    def generate_binary(self):
+        if not self.__torrent_file_downloaded__:
+            raise Exception("not download yet")
+        json_str = json.dumps(json_obj, sort_keys=True)
+        self.__binary__ = json_str.encode(encoding='utf-8')
+
+    def try_decode_from_binary(self, binary: bytes):
+        json_str = binary.decode(encoding='utf-8')
+        tt = Torrent.load_from_content(json_str)
+        if tt.torrent_hash != self.torrent_hash:
+            raise Exception("Not the same torrent")
+        self.name = tt.name
+        self.files = tt.files
+        self.block_size = tt.block_size
+
     @staticmethod
     def load_from_file(file_path: str) -> Torrent:
-        t = Torrent()
         with open(file_path, "r") as f:
-            j = json.load(f)
+            return Torrent.load_from_content(f.read())
+
+    @staticmethod
+    def load_from_content(content: str) -> Torrent:
+        t = Torrent()
+        j = json.loads(content)
         t.name = j["name"]
         t.torrent_hash = j["torrent_hash"]
         t.block_size = int(j["block_size"])
@@ -158,5 +178,5 @@ class Torrent(MyDict):
     def create_dummy_torrent(torrent_hash: str) -> Torrent:
         t = Torrent()
         t.torrent_hash = torrent_hash
-        t.torrent_file_downloaded = False
+        t.__torrent_file_downloaded__ = False
         return t
