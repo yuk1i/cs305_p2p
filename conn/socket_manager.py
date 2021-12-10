@@ -57,7 +57,6 @@ class SocketManager:
     def on_pkt_recv(self, src_addr: IPPort, pkt: BasePacket):
         iaddr = IPPort(src_addr[0], src_addr[1])
         if iaddr not in self.mapper.keys():
-            # TODO: Create new Conn
             peer = self.mapper[iaddr] = self.controller.accept_conn(src_addr)
             if not peer:
                 print("[Socket] Reject Connection From %s:%s" % src_addr)

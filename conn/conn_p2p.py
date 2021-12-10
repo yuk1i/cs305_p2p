@@ -47,12 +47,13 @@ class P2PConn(Conn):
                     ack.status = STATUS_NOT_FOUND
                     self.send_packet(ack)
                     return
-                if not self.controller.active_torrents[str_hash].torrent.__torrent_file_downloaded__:
+                if not self.controller.active_torrents[str_hash].torrent.__torrent_content_filled__:
                     ack.status = STATUS_NOT_READY
                     self.send_packet(ack)
+                    return
                 # I have this torrent
                 ack.status = STATUS_OK
-                bdata = self.controller.active_torrents[str_hash].torrent.generate_binary()
+                bdata = self.controller.active_torrents[str_hash].torrent.__binary__
                 start = min(len(bdata), pkt.since)
                 end = min(len(bdata), pkt.since + pkt.expectedLength)
                 bdata = bdata[start:end]

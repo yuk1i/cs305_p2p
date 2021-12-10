@@ -71,9 +71,9 @@ class Torrent(MyDict):
         self.torrent_hash: str = ""
         self.block_size: int = 4096
         self.files: List[FileObject] = list()
+        self.__torrent_content_filled__ = True
         self.__file_index__ = list()
         self.__block_index__ = list()
-        self.__torrent_file_downloaded__ = True
         self.__binary__: bytes = b''
 
     def check_torrent_hash(self) -> bool:
@@ -119,6 +119,10 @@ class Torrent(MyDict):
 
     @staticmethod
     def load_from_content(content: str) -> Torrent:
+        """
+        :param content: torrent content str, should be decompressed first
+        :return:
+        """
         t = Torrent()
         j = json.loads(content)
         t.name = j["name"]
@@ -135,7 +139,7 @@ class Torrent(MyDict):
                 b.hash = bb["hash"]
                 f.blocks.append(b)
             t.files.append(f)
-        if not t.check_torrent_hash():
+        if not t.check_torrent_hash():  # check integrity
             raise AssertionError("Corrupt Torrent, hash mismatched")
         return t
 
@@ -182,5 +186,5 @@ class Torrent(MyDict):
     def create_dummy_torrent(torrent_hash: str) -> Torrent:
         t = Torrent()
         t.torrent_hash = torrent_hash
-        t.__torrent_file_downloaded__ = False
+        t.__torrent_content_filled__ = False
         return t

@@ -32,12 +32,23 @@ class PeerController(controller.Controller):
             return
         self.tracker_conn.notify(self.local_addr)
 
-    def register_torrent(self, torrent: Torrent) -> controller.TorrentController:
-        if torrent.torrent_hash in self.active_torrents:
-            return self.active_torrents[torrent.torrent_hash]
-        self.active_torrents[torrent.torrent_hash] = controller.TorrentController(torrent, self)
-        self.tracker_conn.register(torrent)
-        return self.active_torrents[torrent.torrent_hash]
+    def register_torrent(self, torrent_hash: str,
+                         torrent_file_path: str = '', torrent: Torrent = None) -> controller.TorrentController:
+        if torrent_hash in self.active_torrents:
+            return self.active_torrents[torrent_hash]
+        self.active_torrents[torrent_hash] = controller.TorrentController(torrent_hash, self, torrent_file_path, torrent)
+        self.tracker_conn.register(torrent_hash)
+        return self.active_torrents[torrent_hash]
+
+    def register_torrent_from_object(self, torrent: Torrent, save_file_path: str = '') -> controller.TorrentController:
+        if not save_file_path:
+            save_file_path = torrent.torrent_hash
+        torrent.save_to_file(save_file_path)
+        return self.register_torrent(torrent.torrent_hash, save_file_path, torrent)
+
+    def register_torrent_from_path(self, torrent_file_path: str) -> controller.TorrentController:
+        torrent = Torrent.load_from_file(torrent_file_path)
+        return self.register_torrent(torrent.torrent_hash, torrent_file_path, torrent)
 
     def retrieve_peer_list(self, torrent_hash: str):
         self.tracker_conn.retrieve_peer_lists(torrent_hash)

@@ -10,18 +10,29 @@ from utils import IPPort
 
 
 class TorrentController:
-    def __init__(self, torrent: Torrent, ctrl: controller.PeerController):
-        self.torrent_hash: str = torrent.torrent_hash
+    def __init__(self, torrent_hash: str, ctrl: controller.PeerController,
+                 torrent_file_path: str = '', torrent: Torrent = None):
+        """
+        A torrent controller must be inited by at least the hash of the torrent,
+        which can be from the hash str, torrent file (path), or Torrent object.
+        :param torrent_hash:
+        :param ctrl:
+        """
+        self.torrent_hash: str = torrent_hash
         self.controller: controller.PeerController = ctrl
-        self.torrent = torrent
+        if torrent:
+            self.torrent = torrent
+            self.torrent.__torrent_file_downloaded__ = True
+        else:
+            self.torrent = Torrent()
         self.status = controller.TorrentStatus.TORRENT_STATUS_NOT_STARTED
         self.chunk_status: List[bool] = list()
         self.peer_list: List[IPPort] = list()
         self.tracker_addr: IPPort = ("", 0)
         self.save_dir: str = ""
-        self.torrent_file_path: str = ""
+        self.torrent_file_path: str = torrent_file_path
         self.thread = threading.Thread(target=self.__run__)
-        self.torrent_binary: bytearray = None
+        self.torrent_binary: bytearray = bytearray()
 
     def __run__(self):
         # Request peers first
@@ -38,7 +49,7 @@ class TorrentController:
         #       create directory structure
         #       and start downloading every data block
         # TODO: Improvement here: Load torrent from self.torrent_save_path and check its hash
-        while not self.torrent.__torrent_file_downloaded__:
+        while not self.torrent.__torrent_content_filled__:
             print("start downloading")
             # Download torrent files from peers
             p2p_conn = self.controller.get_peer_conn(self.peer_list[0])
@@ -48,7 +59,7 @@ class TorrentController:
             try:
                 self.torrent.try_decode_from_binary(self.torrent_binary)
                 self.torrent.save_to_file(self.torrent_file_path)
-                self.torrent.__torrent_file_downloaded__ = True
+                self.torrent.__torrent_content_filled__ = True
             except Exception as e:
                 print("[TC] Errored when trying to decode torrent from binary")
         print("[TC] Successfully download torrent file, size: %s" % (len(self.torrent_binary)))
@@ -72,7 +83,7 @@ class TorrentController:
         # TODO: Exit
 
     def start_download(self, save_dir: str, torrent_file_path: str):
-        if self.torrent.__torrent_file_downloaded__:
+        if self.torrent.__torrent_content_filled__:
             return
         if self.status != controller.TorrentStatus.TORRENT_STATUS_REGISTERED:
             raise Exception("Register torrent first")

@@ -56,12 +56,12 @@ class PeerToTrackerConn(conn.Conn):
         self.send_request(notify_req, None, True)
         self.wait(notify_req.type)
 
-    def register(self, torrent: Torrent):
+    def register(self, torrent_hash: str):
         self.controller: controller.PeerController
         req = RegisterPacket()
-        req.torrent_hash = hexstr_to_bytes(torrent.torrent_hash)
+        req.torrent_hash = hexstr_to_bytes(torrent_hash)
         req.uuid = self.controller.tracker_uuid
-        self.send_request(req, torrent.torrent_hash, True)
+        self.send_request(req, torrent_hash, True)
         self.wait(req.type)
 
     def retrieve_peer_lists(self, torrent_hash: str):

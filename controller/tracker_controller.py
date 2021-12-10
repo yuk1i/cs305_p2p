@@ -15,7 +15,7 @@ class TrackerController(controller.Controller):
         self.peers: List[Tuple[int, IPPort]] = list()
         # peer_list maps a UUID to peer_addr
         self.torrents: Dict[str, Set[IPPort]] = dict()
-        self.conns: List[conn.Conn] = list()
+        self.conns: List[conn.TrackerConn] = list()
         # torrents maps a torrent_hash to a peer_addr list indicating who has this torrent_hash
 
     def accept_conn(self, src_addr: IPPort) -> conn.Conn:
