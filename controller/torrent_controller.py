@@ -49,12 +49,20 @@ class TorrentController:
         #       create directory structure
         #       and start downloading every data block
         # TODO: Improvement here: Load torrent from self.torrent_save_path and check its hash
+        peer_index = 0
         while not self.torrent.__torrent_content_filled__:
-            print("start downloading")
+            print("try to download torrent file")
             # Download torrent files from peers
-            p2p_conn = self.controller.get_peer_conn(self.peer_list[0])
+            if peer_index >= len(self.peer_list):
+                self.controller.retrieve_peer_list(self.torrent_hash)
+                peer_index = 0
+                continue
+            p2p_conn = self.controller.get_peer_conn(self.peer_list[peer_index])
             # TODO: Improvements here
-            p2p_conn.request_torrent_chunk(self.torrent_hash)
+            ready = p2p_conn.request_torrent_chunk(self.torrent_hash)
+            if not ready:
+                peer_index = peer_index + 1
+                continue
             # TODO: combine binary data, call Torrent.
             try:
                 self.torrent.try_decode_from_binary(self.torrent_binary)

@@ -82,10 +82,11 @@ class P2PConn(Conn):
         """
         pass
 
-    def request_torrent_chunk(self, torrent_hash: str, start: int = 0, end: int = 0xFFFFFFFF):
+    def request_torrent_chunk(self, torrent_hash: str, start: int = 0, end: int = 0xFFFFFFFF) -> bool:
         req = RequestForTorrent()
         req.torrent_hash = hexstr_to_bytes(torrent_hash)
         req.since = start
         req.expectedLength = end
         self.send_request(req, torrent_hash, True)
-        self.wait(req.type)
+        return self.wait(req.type, 3)
+        # Wait 3 seconds for reply
