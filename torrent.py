@@ -77,7 +77,7 @@ class Torrent(MyDict):
         self.__binary__: bytes = b''
 
     def check_torrent_hash(self) -> bool:
-        current_hash = copy.deepcopy(self.torrent_hash)
+        current_hash = self.torrent_hash
         self.torrent_hash = ""
         # print("old hash: %s" % current_hash)
         new_hash = hash_utils.hash_json_object(self)
@@ -110,7 +110,6 @@ class Torrent(MyDict):
         self.name = tt.name
         self.files = tt.files
         self.block_size = tt.block_size
-        self.__torrent_file_downloaded__ = True
 
     @staticmethod
     def load_from_file(file_path: str) -> Torrent:
