@@ -43,10 +43,7 @@ class PeerToTrackerConn(conn.Conn):
                         torrent_hash].status = controller.TorrentStatus.TORRENT_STATUS_CANCELED
             elif req_type == TYPE_CLOSE:
                 pass
-            if req_type in self.waiter:
-                with self.waiter[req_type]:
-                    self.waiter[req_type].notify()
-                del self.waiter[req_type]
+            self.notify_lock(req_type)
 
     def notify(self, my_addr: IPPort):
         notify_req = NotifyPacket()

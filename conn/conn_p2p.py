@@ -29,10 +29,7 @@ class P2PConn(Conn):
                 if pkt.status == STATUS_OK and torrent_hash in self.controller.active_torrents:
                     self.controller.active_torrents[torrent_hash]. \
                         on_torrent_chunk_received(pkt.data, pkt.start_at, pkt.length, pkt.total_length)
-            if req_type in self.waiter:
-                with self.waiter[req_type]:
-                    self.waiter[req_type].notify()
-                del self.waiter[req_type]
+            self.notify_lock(req_type)
         else:
             # Request
             # Receive other peers' request

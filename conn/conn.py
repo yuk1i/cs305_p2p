@@ -84,7 +84,20 @@ class Conn:
         self.send_packet(packet)
         return packet.identifier
 
-    def wait(self, itype: int):
+    def wait(self, itype: int, timeout: int = None) -> bool:
+        '''
+        Wait for a response
+        :param itype: packet type
+        :param timeout: timeout in second
+        :return: True if Succeed, False if timeout
+        '''
         if itype in self.waiter:
             with self.waiter[itype]:
-                self.waiter[itype].wait()
+                return self.waiter[itype].wait(timeout)
+
+    def notify_lock(self, itype: int):
+        if itype in self.waiter:
+            with self.waiter[itype]:
+                self.waiter[itype].notify()
+            # del self.waiter[itype]
+            # Dont delete it
