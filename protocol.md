@@ -26,7 +26,8 @@ The only identifier for the torrent is the field `torrent_hash`.
 {
   "name": "The name of this torrent",
   "torrent_hash": "The hash of current json object, with this field empty",
-  "block_size" : "integer, indicates the block size",
+  "block_size": "integer, indicates the block size",
+  "block_count": "integer, the total amount of blocks in this torrent",
   "files": [
     // A json array of file object, order guaranteed but not important
     {
@@ -36,6 +37,7 @@ The only identifier for the torrent is the field `torrent_hash`.
       "dir": "relative path to this torrent, can be empty",
       "size": "integer, The size of file in bytes, must be 0 for a folder",
       "hash": "For a file: SHA256 of the whole file; For a folder: empty string",
+      "fisrt_block_seq": "integer, lowest sequence number of all blocks of this file",
       "blocks": [
         // Every blocks excluiding the last one must have the same size
         {

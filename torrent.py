@@ -8,6 +8,7 @@ import pprint
 from typing import List
 from utils.MyDict import MyDict
 from utils import hash_utils
+from utils import path_utils
 
 
 class SeqGenerator:
@@ -41,12 +42,14 @@ class FileObject(MyDict):
         self.dir: str = sdir
         self.size: int = 0
         self.hash: str = ""
+        self.first_block_seq: int = 0
         self.blocks: List[BlockObject] = list()
 
     def calculate_blocks(self, abs_path: str, block_size: int, seq: SeqGenerator):
         with open(abs_path, "rb") as f:
             self.size = 0
             hasher = hash_utils.__get_hasher__()
+            first_block_flag = True
             while True:
                 chunk = f.read(block_size)
                 if chunk == b'':
@@ -56,6 +59,9 @@ class FileObject(MyDict):
                 b = BlockObject()
                 b.size = len(chunk)
                 b.seq = seq.increment_and_get()
+                if first_block_flag:
+                    self.first_block_seq = b.seq
+                    first_block_flag = False
                 b.hash = hash_utils.hash_bytes(chunk)
                 self.blocks.append(b)
             self.hash = hasher.hexdigest()
@@ -70,10 +76,9 @@ class Torrent(MyDict):
         self.name: str = ""
         self.torrent_hash: str = ""
         self.block_size: int = 4096
+        self.block_count: int = 0
         self.files: List[FileObject] = list()
-        self.__torrent_content_filled__ = True
-        self.__file_index__ = list()
-        self.__block_index__ = list()
+        self.__json_str__: str = ''
         self.__binary__: bytes = b''
 
     def check_torrent_hash(self) -> bool:
@@ -98,13 +103,13 @@ class Torrent(MyDict):
         if not self.__torrent_file_downloaded__:
             raise Exception("not download yet")
         if not self.__binary__:
-            json_str = json.dumps(self, sort_keys=True)
-            self.__binary__ = lzma.compress(json_str.encode(encoding='utf-8'))
+            self.__json_str__ = json.dumps(self, sort_keys=True)
+            self.__binary__ = lzma.compress(self.__json_str__.encode(encoding='utf-8'))
         return self.__binary__
 
     def try_decode_from_binary(self, binary: bytes):
-        json_str = lzma.decompress(binary).decode(encoding='utf-8')
-        tt = Torrent.load_from_content(json_str)
+        self.__json_str__ = lzma.decompress(binary).decode(encoding='utf-8')
+        tt = Torrent.load_from_content(self.__json_str__)
         if tt.torrent_hash != self.torrent_hash:
             raise Exception("Not the same torrent")
         self.name = tt.name
@@ -146,6 +151,7 @@ class Torrent(MyDict):
     def generate_torrent(path: str, name: str, block_size: int = 4096) -> Torrent:
         """
         Generate A Torrent Object according to the `path` folder
+        cannot save empty dir
         :param path: must be a folder, support both relative path and absolute path
         :param name: torrent name
         :param block_size: block size in bytes, default value: 4096 bytes
@@ -157,14 +163,15 @@ class Torrent(MyDict):
         file_seq = SeqGenerator()
         block_seq = SeqGenerator()
         # recursively traverse directory
-        for dirpath, dirnames, filenames in os.walk(path):
+        for dirpath, dirnames, filenames in path_utils.pathwalk(path):
             relative = os.path.relpath(dirpath, path)
             print("get relative path %s for path %s" % (relative, dirpath))
             for file in filenames:
-                abs_dir = os.path.join(dirpath, file)
+                abs_dir = path_utils.pathjoin(dirpath, file)
                 fo = FileObject(file_seq.increment_and_get(), file, relative)
                 fo.calculate_blocks(abs_dir, tt.block_size, block_seq)
                 tt.files.append(fo)
+                tt.block_count += len(fo.blocks)
         tt.generate_hash()
         return tt
 
@@ -180,6 +187,13 @@ class Torrent(MyDict):
 
     def get_file(self, seq_number: int) -> FileObject:
         pass
+
+    # def build_directory_structure(self, save_dir: str = ''):
+    #     save_dir =
+    #
+    # @staticmethod
+    # def build_directory(base_dir, dfiles: list):
+
 
     @staticmethod
     def create_dummy_torrent(torrent_hash: str) -> Torrent:

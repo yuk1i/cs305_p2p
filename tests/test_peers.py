@@ -24,8 +24,8 @@ class MyTestCase(unittest.TestCase):
         tt_hash = full_tt.torrent_hash
         dummy_tt = Torrent.create_dummy_torrent(tt_hash)
 
-        p1.register_torrent(full_tt)
-        p2.register_torrent(dummy_tt)
+        p1.register_torrent_from_object(full_tt, 'excluded/full.bt')
+        p2.register_torrent_from_object(dummy_tt, 'excluded/dummy.bt')
 
         p1.retrieve_peer_list(tt_hash)
         self.assertIn(p2_addr, p1.active_torrents[tt_hash].peer_list)

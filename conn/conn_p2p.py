@@ -44,7 +44,7 @@ class P2PConn(Conn):
                     ack.status = STATUS_NOT_FOUND
                     self.send_packet(ack)
                     return
-                if not self.controller.active_torrents[str_hash].torrent.__torrent_content_filled__:
+                if not self.controller.active_torrents[str_hash].__torrent_content_filled__:
                     ack.status = STATUS_NOT_READY
                     self.send_packet(ack)
                     return

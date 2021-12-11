@@ -26,6 +26,13 @@ class TestHash(unittest.TestCase):
         self.assertEqual(SHA256, result)
         os.remove("test")
 
+    def test_empty_file(self):
+        open('empty_file', 'wb').close()
+        hash = hash_file('empty_file')
+        expected = 'e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855'
+        self.assertEqual(hash, expected)
+        os.remove('empty_file')
+
     def test_json_object(self):
         d = dict()
         d["test"] = "qwqwq"
