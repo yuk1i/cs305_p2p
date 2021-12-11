@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import random
 import threading
 import time
 from typing import List, Tuple
@@ -49,7 +50,7 @@ class TorrentController:
         #       create directory structure
         #       and start downloading every data block
         # TODO: Improvement here: Load torrent from self.torrent_save_path and check its hash
-        peer_index = 0
+        peer_index = random.randrange(0, len(self.peer_list))
         while not self.torrent.__torrent_content_filled__:
             print("try to download torrent file")
             # Download torrent files from peers
