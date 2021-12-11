@@ -3,7 +3,7 @@ from __future__ import annotations
 import random
 import threading
 import time
-from typing import List, Tuple
+from typing import List, Tuple, Dict, Set
 
 import controller
 from torrent import Torrent
@@ -34,6 +34,7 @@ class TorrentController:
         self.status = controller.TorrentStatus.TORRENT_STATUS_NOT_STARTED
         # self.chunk_status: List[bool] = list()
         self.peer_list: List[IPPort] = list()
+        self.peer_chunk_info: Dict[IPPort, Set[int]] = dict()
         # self.tracker_addr: IPPort = ("", 0)
         self.thread = threading.Thread(target=self.__run__)
         self.torrent_binary: bytearray = bytearray()
@@ -77,7 +78,6 @@ class TorrentController:
         print("[TC] Successfully obtain torrent file, size: %s" % (len(self.torrent.__json_str__)))
         self.dir_controller = controller.DirectoryController(self.torrent, self.torrent_file_path)
 
-
     def on_peer_list_update(self, peers: List[IPPort]):
         print("[TorrentCtrl] {} Peer List updated: {}".format(self.torrent_hash, peers))
         self.peer_list.clear()
@@ -112,10 +112,16 @@ class TorrentController:
     def wait_downloaded(self):
         self.thread.join()
 
-    def on_new_income_peer(self, remote_addr: IPPort):
+    def on_new_income_peer(self, remote_addr: IPPort, chunk_list: List[int] = None):
         """
         通过 RequestForTorrent / ChunkInfoUpdate 来学习到的新peer
         :param remote_addr:
+        :param chunk_list:
         :return:
         """
-        pass
+        self.peer_list.append(remote_addr)
+        if remote_addr not in self.peer_chunk_info:
+            self.peer_chunk_info[remote_addr] = set()
+        if chunk_list:
+            self.peer_chunk_info[remote_addr].update(chunk_list)
+

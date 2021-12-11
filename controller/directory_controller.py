@@ -62,7 +62,7 @@ class DirectoryController:
 
     def retrieve_block(self, block_seq: int) -> bytes:
         if block_seq not in self.local_state.local_block or block_seq > self.torrent.block_count:
-            return None
+            return b''
         save_file_path = self._get_save_file_path(self.fseq2fpath[self.bseq2fseq[block_seq]])
         offset = self.torrent.block_size * (block_seq - self.fseq2file[self.bseq2fseq[block_seq]].first_block_seq)
         with open(save_file_path, 'rb') as f:
