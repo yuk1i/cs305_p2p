@@ -88,13 +88,16 @@ class DirectoryController:
             return pickle.load(fp)
 
     def _save_local_state(self):
-        self.loop_save_thread_waiter.notify()
-        self.loop_save_thread_waiter.release()
+        # self.loop_save_thread_waiter.acquire()
+        with self.loop_save_thread_waiter:
+            self.loop_save_thread_waiter.notify()
+        pass
 
     def _loop_save_local_state(self):
         while self._active:
-            self.loop_save_thread_waiter.acquire()
-            self.loop_save_thread_waiter.wait()
+            # self.loop_save_thread_waiter.acquire()
+            with self.loop_save_thread_waiter:
+                self.loop_save_thread_waiter.wait()
             self.local_state_lock.acquire()
             with open(self.local_state_path, 'wb') as fp:
                 pickle.dump(self.local_state, fp)
