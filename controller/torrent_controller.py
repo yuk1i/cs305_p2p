@@ -111,3 +111,11 @@ class TorrentController:
 
     def wait_downloaded(self):
         self.thread.join()
+
+    def on_new_income_peer(self, remote_addr: IPPort):
+        """
+        通过 RequestForTorrent / ChunkInfoUpdate 来学习到的新peer
+        :param remote_addr:
+        :return:
+        """
+        pass

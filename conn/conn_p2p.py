@@ -44,6 +44,9 @@ class P2PConn(Conn):
                     ack.status = STATUS_NOT_FOUND
                     self.send_packet(ack)
                     return
+                if self.remote_addr not in self.controller.active_torrents[str_hash].peer_list:
+                    self.controller.active_torrents[str_hash].peer_list.append(self.remote_addr)
+                    self.controller.active_torrents[str_hash].on_new_income_peer(self.remote_addr)
                 if not self.controller.active_torrents[str_hash].__torrent_content_filled__:
                     ack.status = STATUS_NOT_READY
                     self.send_packet(ack)
