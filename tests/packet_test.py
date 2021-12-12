@@ -6,6 +6,7 @@ import conn
 from conn import ReAssembler
 from packet.deserializer import deserialize_packet
 from packet.p2t_packet import *
+from packet.p2p_packet import *
 from utils.bytes_utils import *
 from packet.base_packet import *
 from utils.test_utils import assert_attr_equal, print_packet
@@ -89,6 +90,17 @@ class MyTestCase(unittest.TestCase):
         fpkt = deserialize_packet(ra.data)
         fpkt: ACKRequestPeerPacket
         self.assertEqual(fpkt.addresses, lst)
+
+    def test_sid_packing(self):
+        ids = {1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 15, 16, 20, 21, 22, 30, 999, 11, 23}
+        lst = pack_seq_ids(ids)
+        print(lst)
+        lst_noflag = lst.copy()
+        for i in range(0, len(lst_noflag)):
+            lst_noflag[i] = lst_noflag[i] & (SID_FLAG_RANGE - 1)
+        print(lst_noflag)
+        unpacked_ids = unpack_seq_ids(lst)
+        self.assertEqual(ids, unpacked_ids)
 
 
 if __name__ == '__main__':

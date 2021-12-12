@@ -1,6 +1,7 @@
-from typing import List, Tuple
+from typing import List, Tuple, Set
 
 import utils.bytes_utils
+import torrent
 from packet.base_packet import *
 from utils.bytes_utils import ByteWriter, ByteReader
 
@@ -53,17 +54,17 @@ class UpdateChunkInfo(BasePacket):
         super(UpdateChunkInfo, self).__init__(TYPE_UPDATE_CHUNK_INFO)
         self.reassemble = ReAssembleHeader()
         self.torrent_hash: bytes = b''
-        self.seq_ids: List[int] = list()
+        self.packed_seq_ids: List[int] = list()
 
     def __pack_internal__(self, w: ByteWriter):
         w.write_bytes(self.torrent_hash)
-        for seq in self.seq_ids:
+        for seq in self.packed_seq_ids:
             w.write_int(seq)
 
     def __unpack_internal__(self, r: ByteReader):
         self.torrent_hash = r.read_bytes(32)
         while r.remain() >= 4:
-            self.seq_ids.append(r.read_int())
+            self.packed_seq_ids.append(r.read_int())
 
 
 class ACKUpdateChunkInfo(ACKPacket):
@@ -71,17 +72,87 @@ class ACKUpdateChunkInfo(ACKPacket):
         super(ACKUpdateChunkInfo, self).__init__()
         self.reassemble = ReAssembleHeader()
         self.status: int = STATUS_NOT_SET
-        self.seq_ids: List[int] = list()
+        self.packed_seq_ids: List[int] = list()
 
     def __pack_internal__(self, w: ByteWriter):
         w.write_int(self.status)
-        for seq in self.seq_ids:
+        for seq in self.packed_seq_ids:
             w.write_int(seq)
 
     def __unpack_internal__(self, r: ByteReader):
         self.status = r.read_int()
         while r.remain() >= 4:
-            self.seq_ids.append(r.read_int())
+            self.packed_seq_ids.append(r.read_int())
+
+
+SID_FLAG_RANGE = 1 << 31
+
+
+def pack_seq_ids(ids: Set[int]) -> List[int]:
+    """
+    压缩seq_ids
+    :param tor:
+    :param ids:
+    :return:
+    """
+    iids = ids.copy()
+    ret = list()
+    range_start = 0
+    max_ids = max(iids)
+    for i in range(1, max_ids + 1):
+        if i not in ids:
+            if range_start == 0:
+                continue
+            else:
+                if range_start == i - 1:
+                    ret.append(range_start)
+                else:
+                    # has range, start from range start to i-1
+                    ret.append(range_start | SID_FLAG_RANGE)
+                    ret.append((i - 1) | SID_FLAG_RANGE)
+                range_start = 0
+        else:
+            # contains i
+            if i == max_ids:
+                if range_start == 0:
+                    ret.append(i)
+                else:
+                    ret.append(range_start | SID_FLAG_RANGE)
+                    ret.append(i | SID_FLAG_RANGE)
+                break
+            if range_start != 0:
+                continue
+                # already in a range, try to extend
+            else:
+                range_start = i
+                continue
+
+    return ret
+
+
+def unpack_seq_ids(ids: List[int]) -> Set[int]:
+    """
+    解压缩 Seq ids
+    :param ids:
+    :param tor:
+    :return:
+    """
+    ret = set()
+    range_start = 0
+    for i in ids:
+        if i & SID_FLAG_RANGE == SID_FLAG_RANGE:
+            i = i & (SID_FLAG_RANGE - 1)
+            if range_start == 0:
+                range_start = i
+                continue
+            else:
+                # end of a range
+                for ii in range(range_start, i + 1):
+                    ret.add(ii)
+                range_start = 0
+        else:
+            ret.add(i)
+    return ret
 
 
 class RequestChunk(BasePacket):
