@@ -23,10 +23,12 @@ class DirectoryController:
         self._active = True
         self.torrent = torrent
         self.save_dir = save_dir
+        self.torrent_block_count: int = 0
         self.fseq2file: Dict[int, FileObject] = {}
         self.fseq2fpath: Dict[int, str] = {}
         self.bseq2fseq: Dict[int, int] = {}  # map block to file relative path
         for file in self.torrent.files:
+            self.torrent_block_count += len(file.blocks)
             self.fseq2file[file.seq] = file
             self.fseq2fpath[file.seq] = pathjoin(file.dir, file.name)
             for block in file.blocks:
@@ -61,19 +63,19 @@ class DirectoryController:
             self._allocate_file(rel_path, file.size)
 
     def retrieve_block(self, block_seq: int) -> bytes:
-        if block_seq not in self.local_state.local_block or block_seq > self.torrent.block_count:
+        if block_seq not in self.local_state.local_block or block_seq > self.torrent_block_count:
             return b''
         save_file_path = self._get_save_file_path(self.fseq2fpath[self.bseq2fseq[block_seq]])
-        offset = self.torrent.block_size * (block_seq - self.fseq2file[self.bseq2fseq[block_seq]].first_block_seq)
+        offset = self.torrent.block_size * (block_seq - self.fseq2file[self.bseq2fseq[block_seq]].blocks[0].seq)
         with open(save_file_path, 'rb') as f:
             f.seek(offset)
             return f.read(self.torrent.block_size)
 
     def save_block(self, block_seq: int, data: bytes) -> bool:
-        if block_seq in self.local_state.local_block or block_seq > self.torrent.block_count:
+        if block_seq in self.local_state.local_block or block_seq > self.torrent_block_count:
             return False
         save_file_path = self._get_save_file_path(self.fseq2fpath[self.bseq2fseq[block_seq]])
-        offset = self.torrent.block_size * (block_seq - self.fseq2file[self.bseq2fseq[block_seq]].first_block_seq)
+        offset = self.torrent.block_size * (block_seq - self.fseq2file[self.bseq2fseq[block_seq]].blocks[0].seq)
         with open(save_file_path, 'ab') as f:
             f.seek(offset)
             f.write(data)

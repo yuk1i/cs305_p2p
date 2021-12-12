@@ -42,14 +42,12 @@ class FileObject(MyDict):
         self.dir: str = sdir
         self.size: int = 0
         self.hash: str = ""
-        self.first_block_seq: int = 0
         self.blocks: List[BlockObject] = list()
 
     def calculate_blocks(self, abs_path: str, block_size: int, seq: SeqGenerator):
         with open(abs_path, "rb") as f:
             self.size = 0
             hasher = hash_utils.__get_hasher__()
-            first_block_flag = True
             while True:
                 chunk = f.read(block_size)
                 if chunk == b'':
@@ -59,9 +57,6 @@ class FileObject(MyDict):
                 b = BlockObject()
                 b.size = len(chunk)
                 b.seq = seq.increment_and_get()
-                if first_block_flag:
-                    self.first_block_seq = b.seq
-                    first_block_flag = False
                 b.hash = hash_utils.hash_bytes(chunk)
                 self.blocks.append(b)
             self.hash = hasher.hexdigest()
@@ -76,7 +71,6 @@ class Torrent(MyDict):
         self.name: str = ""
         self.torrent_hash: str = ""
         self.block_size: int = 4096
-        self.block_count: int = 0
         self.files: List[FileObject] = list()
         self.__json_str__: str = ''
         self.__binary__: bytes = b''
@@ -171,7 +165,6 @@ class Torrent(MyDict):
                 fo = FileObject(file_seq.increment_and_get(), file, relative)
                 fo.calculate_blocks(abs_dir, tt.block_size, block_seq)
                 tt.files.append(fo)
-                tt.block_count += len(fo.blocks)
         tt.generate_hash()
         return tt
 
