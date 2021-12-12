@@ -1,12 +1,13 @@
 from __future__ import annotations
 
 from torrent import Torrent, FileObject
+from torrent_local_state import TorrentLocalState
 import os
 import pickle
 import threading
 from utils.path_utils import *
 
-from typing import Dict
+from typing import Dict, Set, List
 
 '''
 考虑加指定torrent中要下载的文件功能，先摸了
@@ -82,22 +83,23 @@ class DirectoryController:
             self._update_local_state(block_seq)
         return True
 
-    def match_wanted_block(self, offered_block: set):
-        return offered_block.difference(self.local_state.local_block)
+    def match_wanted_block(self, offered_block: Set[int]):
+        return self.local_state.match_block(self.local_state.local_block, offered_block)
+
+    def match_wanted_block(self, offered_block: List[int]):
+        return self.match_wanted_block(TorrentLocalState.unpack_seq_ids(offered_block))
 
     def _init_local_state(self):
         with open(self.local_state_path, 'rb') as fp:
             return pickle.load(fp)
 
     def _save_local_state(self):
-        # self.loop_save_thread_waiter.acquire()
         with self.loop_save_thread_waiter:
             self.loop_save_thread_waiter.notify()
         pass
 
     def _loop_save_local_state(self):
         while self._active:
-            # self.loop_save_thread_waiter.acquire()
             with self.loop_save_thread_waiter:
                 self.loop_save_thread_waiter.wait()
             self.local_state_lock.acquire()
@@ -140,7 +142,3 @@ class DirectoryController:
         return pathjoin(self.save_dir, file_path)
 
 
-class TorrentLocalState:
-
-    local_block = set()
-    # file_index = list()
