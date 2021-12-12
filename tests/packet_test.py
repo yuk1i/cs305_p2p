@@ -1,4 +1,5 @@
 import pprint
+import random
 import unittest
 from random import shuffle
 
@@ -101,6 +102,17 @@ class MyTestCase(unittest.TestCase):
         print(lst_noflag)
         unpacked_ids = unpack_seq_ids(lst)
         self.assertEqual(ids, unpacked_ids)
+
+    def test_random_sid_packing(self):
+        for _ in range(0, 1000):
+            mmax = 100
+            ids = set()
+            for i in range(0, 90):
+                ii = random.randrange(1, mmax)
+                ids.add(ii)
+            lst = pack_seq_ids(ids)
+            unpacked = unpack_seq_ids(lst)
+            self.assertEqual(ids, unpacked)
 
 
 if __name__ == '__main__':

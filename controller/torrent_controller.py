@@ -119,6 +119,7 @@ class TorrentController:
         :param chunk_list:
         :return:
         """
+        print("[TC] New Income Peer %s:%s" % remote_addr)
         self.peer_list.append(remote_addr)
         if remote_addr not in self.peer_chunk_info:
             self.peer_chunk_info[remote_addr] = set()
