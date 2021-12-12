@@ -84,7 +84,7 @@ class DirectoryController:
         return True
 
     def match_wanted_block(self, offered_block: Set[int]):
-        return self.local_state.match_block(self.local_state.local_block, offered_block)
+        return TorrentLocalState.match_block(self.local_state.local_block, offered_block)
 
     def match_wanted_block(self, offered_block: List[int]):
         return self.match_wanted_block(TorrentLocalState.unpack_seq_ids(offered_block))

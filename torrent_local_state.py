@@ -1,4 +1,5 @@
 from typing import Set, List
+from math import log
 
 SID_FLAG_RANGE = 1 << 31
 
@@ -30,34 +31,53 @@ class TorrentLocalState:
         iids = ids.copy()
         ret = list()
         range_start = 0
-        max_ids = max(iids)
-        for i in range(1, max_ids + 1):
-            if i not in ids:
-                if range_start == 0:
-                    continue
+        size = len(iids)
+        max_id = max(iids)
+        if size == 0:
+            pass
+        elif max_id > size * log(size, 2):
+            iids = sorted(iids)
+            i = 0
+            while i < size:
+                range_start = iids[i]
+                range_end = range_start
+                i += 1
+                while i < size and iids[i] == range_end + 1:
+                    range_end = iids[i]
+                    i += 1
+                if range_end == range_start:
+                    ret.append(range_start)
                 else:
-                    if range_start == i - 1:
-                        ret.append(range_start)
-                    else:
-                        # has range, start from range start to i-1
-                        ret.append(range_start | SID_FLAG_RANGE)
-                        ret.append((i - 1) | SID_FLAG_RANGE)
-                    range_start = 0
-            else:
-                # contains i
-                if i == max_ids:
+                    ret.append(range_start | SID_FLAG_RANGE)
+                    ret.append(range_end | SID_FLAG_RANGE)
+        else:
+            for i in range(1, max_id + 1):
+                if i not in ids:
                     if range_start == 0:
-                        ret.append(i)
+                        continue
                     else:
-                        ret.append(range_start | SID_FLAG_RANGE)
-                        ret.append(i | SID_FLAG_RANGE)
-                    break
-                if range_start != 0:
-                    continue
-                    # already in a range, try to extend
+                        if range_start == i - 1:
+                            ret.append(range_start)
+                        else:
+                            # has range, start from range start to i-1
+                            ret.append(range_start | SID_FLAG_RANGE)
+                            ret.append((i - 1) | SID_FLAG_RANGE)
+                        range_start = 0
                 else:
-                    range_start = i
-                    continue
+                    # contains i
+                    if i == max_id:
+                        if range_start == 0:
+                            ret.append(i)
+                        else:
+                            ret.append(range_start | SID_FLAG_RANGE)
+                            ret.append(i | SID_FLAG_RANGE)
+                        break
+                    if range_start != 0:
+                        continue
+                        # already in a range, try to extend
+                    else:
+                        range_start = i
+                        continue
 
         return ret
 

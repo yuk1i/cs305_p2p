@@ -93,8 +93,19 @@ class MyTestCase(unittest.TestCase):
         fpkt: ACKRequestPeerPacket
         self.assertEqual(fpkt.addresses, lst)
 
-    def test_sid_packing(self):
+    def test_few_sid_packing(self):
         ids = {1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 15, 16, 20, 21, 22, 30, 999, 11, 23}
+        lst = TorrentLocalState.pack_seq_ids(ids)
+        print(lst)
+        lst_noflag = lst.copy()
+        for i in range(0, len(lst_noflag)):
+            lst_noflag[i] = lst_noflag[i] & (SID_FLAG_RANGE - 1)
+        print(lst_noflag)
+        unpacked_ids = TorrentLocalState.unpack_seq_ids(lst)
+        self.assertEqual(ids, unpacked_ids)
+
+    def test_many_sid_packing(self):
+        ids = {1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 15, 16, 20, 21, 22, 30, 31, 11, 23}
         lst = TorrentLocalState.pack_seq_ids(ids)
         print(lst)
         lst_noflag = lst.copy()
