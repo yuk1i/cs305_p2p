@@ -20,6 +20,7 @@ class DirectoryController:
     """
     Extract and store all information about files in the torrent *locally* in this class
     """
+
     def __init__(self, torrent: Torrent, torrent_file_path: str, save_dir: str = '.'):
         self._active = True
         self.torrent = torrent
@@ -43,6 +44,8 @@ class DirectoryController:
                 pass
         if not self.local_state:
             self.local_state = TorrentLocalState()
+        if not self.torrent.dummy:
+            self.check_all_hash()
         self.local_state_lock = threading.Lock()
         self.loop_save_thread: threading.Thread = threading.Thread(target=self._loop_save_local_state)
         self.loop_save_thread_waiter = threading.Condition()
@@ -62,6 +65,21 @@ class DirectoryController:
             rel_path = pathjoin(rel_dir, file.name)
             self._allocate_file(rel_path, file.size)
 
+    def check_file_hash(self, fseq: int):
+        if self.torrent.dummy:
+            raise Exception("Torrent data not available")
+        pass
+
+    def check_block_hash(self, bdata: bytes) -> bool:
+        if self.torrent.dummy:
+            raise Exception("Torrent data not available")
+        pass
+
+    def check_all_hash(self):
+        if self.torrent.dummy:
+            raise Exception("Torrent data not available")
+        pass
+
     def retrieve_block(self, block_seq: int) -> bytes:
         if block_seq not in self.local_state.local_block or block_seq > self.torrent_block_count:
             return b''
@@ -72,6 +90,12 @@ class DirectoryController:
             return f.read(self.torrent.block_size)
 
     def save_block(self, block_seq: int, data: bytes) -> bool:
+        """
+        Save binary data for a block and save to local state
+        :param block_seq:
+        :param data:
+        :return:
+        """
         if block_seq in self.local_state.local_block or block_seq > self.torrent_block_count:
             return False
         save_file_path = self._get_save_file_path(self.fseq2fpath[self.bseq2fseq[block_seq]])
@@ -84,9 +108,6 @@ class DirectoryController:
 
     def match_wanted_block(self, offered_block: Set[int]):
         return TorrentLocalState.match_block(self.local_state.local_block, offered_block)
-
-    def match_wanted_block(self, offered_block: List[int]):
-        return self.match_wanted_block(TorrentLocalState.unpack_seq_ids(offered_block))
 
     def _init_local_state(self):
         with open(self.local_state_path, 'rb') as fp:
@@ -101,15 +122,13 @@ class DirectoryController:
         while self._active:
             with self.loop_save_thread_waiter:
                 self.loop_save_thread_waiter.wait()
-            self.local_state_lock.acquire()
-            with open(self.local_state_path, 'wb') as fp:
-                pickle.dump(self.local_state, fp)
-            self.local_state_lock.release()
+            with self.local_state_lock:
+                with open(self.local_state_path, 'wb') as fp:
+                    pickle.dump(self.local_state, fp)
 
     def _update_local_state(self, block_seq: int):
-        self.local_state_lock.acquire()
-        self.local_state.local_block.add(block_seq)
-        self.local_state_lock.release()
+        with self.local_state_lock:
+            self.local_state.local_block.add(block_seq)
 
     def _auto_save_local_state(self):
         while self._active:

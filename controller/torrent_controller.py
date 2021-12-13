@@ -31,6 +31,8 @@ class TorrentController:
         self.thread = threading.Thread(target=self.__run__)
         self.torrent_binary = bytearray()
         self.dir_controller = controller.DirectoryController(torrent, torrent_file_path, save_dir)
+        if not self.torrent.dummy:
+            self.dir_controller.check_all_hash()
         # if self.
 
     def __run__(self):
