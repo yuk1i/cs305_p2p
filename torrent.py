@@ -75,6 +75,8 @@ class Torrent(MyDict):
         self.__json_str__: str = ''
         self.__binary__: bytes = b''
         self.__dummy__ = False
+        self.__bseq2bo__: Dict[int, BlockObject] = dict()
+        self.__fseq2fo__: Dict[int, FileObject] = dict()
 
     @property
     def dummy(self):
@@ -179,20 +181,36 @@ class Torrent(MyDict):
         generate indexes for blocks and files, provide O(1)'s access to a File Object and Block Object
         :return:
         """
-        pass
+        if self.dummy:
+            raise Exception("Torrent data not available")
+        for f in self.files:
+            for b in f.blocks:
+                self.__bseq2bo__[b.seq] = b
+            self.__fseq2fo__[f.seq] = f
 
-    def get_block(self, seq_number: int) -> BlockObject:
-        pass
+    def get_block(self, bseq: int) -> BlockObject:
+        if self.dummy:
+            raise Exception("Torrent data not available")
+        if len(self.__bseq2bo__) == 0:
+            self.generate_index()
+        if bseq in self.__bseq2bo__:
+            return self.__bseq2bo__[bseq]
+        return None
 
-    def get_file(self, seq_number: int) -> FileObject:
-        pass
+    def get_file(self, fseq: int) -> FileObject:
+        if self.dummy:
+            raise Exception("Torrent data not available")
+        if len(self.__fseq2fo__) == 0:
+            self.generate_index()
+        if fseq in self.__fseq2fo__:
+            return self.__fseq2fo__[fseq]
+        return None
 
     # def build_directory_structure(self, save_dir: str = ''):
     #     save_dir =
     #
     # @staticmethod
     # def build_directory(base_dir, dfiles: list):
-
 
     @staticmethod
     def create_dummy_torrent(torrent_hash: str) -> Torrent:

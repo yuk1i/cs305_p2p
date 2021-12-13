@@ -5,6 +5,8 @@ from torrent_local_state import TorrentLocalState
 import os
 import pickle
 import threading
+
+from utils import hash_utils
 from utils.path_utils import *
 
 from typing import Dict, Set, List
@@ -65,20 +67,35 @@ class DirectoryController:
             rel_path = pathjoin(rel_dir, file.name)
             self._allocate_file(rel_path, file.size)
 
-    def check_file_hash(self, fseq: int):
+    def check_file_hash(self, fseq: int) -> bool:
         if self.torrent.dummy:
             raise Exception("Torrent data not available")
-        pass
+        fo: FileObject = self.torrent.get_file(fseq)
+        if fo is None:
+            return False
+        fpath = self.fseq2fpath[fseq]
+        hasher = hash_utils.__get_hasher__()
+        with open(fpath, "rb") as f:
+            while True:
+                chunk = f.read(4096)
+                if chunk == b'':
+                    break
+                hasher.update(chunk)
+        return hasher.hexdigest() == fo.hash
 
-    def check_block_hash(self, bdata: bytes) -> bool:
+    def check_block_hash(self, bseq: int, bdata: bytes) -> bool:
         if self.torrent.dummy:
             raise Exception("Torrent data not available")
-        pass
+        bo = self.torrent.get_block(bseq)
+        return hash_utils.hash_bytes(bdata) == bo.hash
 
-    def check_all_hash(self):
+    def check_all_hash(self) -> bool:
         if self.torrent.dummy:
             raise Exception("Torrent data not available")
-        pass
+        for f in self.torrent.files:
+            if not self.check_file_hash(f.seq):
+                return False
+        return True
 
     def retrieve_block(self, block_seq: int) -> bytes:
         if block_seq not in self.local_state.local_block or block_seq > self.torrent_block_count:
