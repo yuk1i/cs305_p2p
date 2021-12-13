@@ -1,5 +1,8 @@
 from __future__ import annotations
+
+import math
 import random
+import time
 from typing import Tuple
 import socket
 import struct
@@ -62,6 +65,9 @@ def ipport_to_int(src_addr: utils.ip_port.IPPort) -> int:
     i4 |= int(src_addr[1])
     return i4
 
+
+def current_time_ms() -> int:
+    return math.floor(time.time() * 1000)
 
 class ByteWriter:
     def __init__(self, data: bytearray):

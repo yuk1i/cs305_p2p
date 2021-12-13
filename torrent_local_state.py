@@ -5,7 +5,8 @@ SID_FLAG_RANGE = 1 << 31
 
 
 class TorrentLocalState:
-    _local_block: Set[int] = set()
+    def __init__(self):
+        self._local_block: Set[int] = set()
 
     # file_index = list()
 

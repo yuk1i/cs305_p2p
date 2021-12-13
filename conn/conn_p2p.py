@@ -37,6 +37,16 @@ class P2PConn(Conn):
                 if pkt.status == STATUS_OK and torrent_hash in self.controller.active_torrents:
                     tc = self.controller.active_torrents[torrent_hash]
                     tc.on_peer_chunk_updated(self.remote_addr, TorrentLocalState.unpack_seq_ids(pkt.packed_seq_ids))
+            elif req_type == TYPE_REQUEST_CHUNK:
+                pkt: ACKRequestChunk
+                torrent_hash: str = state
+                if pkt.status == STATUS_OK and torrent_hash in self.controller.active_torrents:
+                    tc = self.controller.active_torrents[torrent_hash]
+                    if tc.dir_controller.check_chunk_hash(pkt.chunk_seq_id, pkt.data):
+                        tc.dir_controller.save_block(pkt.chunk_seq_id, pkt.data)
+                    else:
+                        print("chunk hash failed for id %s" % pkt.chunk_seq_id)
+                    tc.on_peer_respond(self.remote_addr)
             self.notify_lock(req_type)
         else:
             # Request
@@ -91,6 +101,27 @@ class P2PConn(Conn):
                 ack.status = STATUS_OK
                 ack.packed_seq_ids = TorrentLocalState.pack_seq_ids(tc.dir_controller.local_state.local_block)
                 self.send_packet(ack)
+            elif req_type == TYPE_REQUEST_CHUNK:
+                pkt: RequestChunk
+                str_hash = bytes_to_hexstr(pkt.torrent_hash)
+                ack = ACKRequestChunk()
+                ack.set_request(pkt)
+                if str_hash not in self.controller.active_torrents:
+                    ack.status = STATUS_NOT_FOUND
+                    self.send_packet(ack)
+                    return
+                tc = self.controller.active_torrents[str_hash]
+                if self.remote_addr not in tc.peer_list:
+                    tc.on_new_income_peer(self.remote_addr)
+                bdata = tc.dir_controller.retrieve_block(pkt.chunk_seq_id)
+                if not bdata:
+                    ack.status = STATUS_NOT_READY
+                    self.send_packet(ack)
+                    return
+                ack.status = STATUS_OK
+                ack.chunk_seq_id = pkt.chunk_seq_id
+                ack.data = bdata
+                self.send_packet(ack)
 
     def last_active(self):
         """
@@ -126,4 +157,10 @@ class P2PConn(Conn):
         req = UpdateChunkInfo()
         req.torrent_hash = hexstr_to_bytes(torrent_hash)
         req.packed_seq_ids = TorrentLocalState.pack_seq_ids(my_block)
+        self.send_request(req, torrent_hash, False)
+
+    def async_request_chunk(self, torrent_hash: str, seq: int):
+        req = RequestChunk()
+        req.torrent_hash = hexstr_to_bytes(torrent_hash)
+        req.chunk_seq_id = seq
         self.send_request(req, torrent_hash, False)

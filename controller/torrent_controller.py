@@ -1,13 +1,20 @@
 from __future__ import annotations
 
+import math
+import queue
 import random
 import threading
 import time
 from typing import List, Tuple, Dict, Set
 
 import controller
+import utils.bytes_utils
 from torrent import Torrent
 from utils import IPPort
+
+EV_QUIT = 0
+EV_PEER_CHUNK_INFO_UPDATED = 1
+EV_PEER_RESPOND = 2
 
 
 class TorrentController:
@@ -29,6 +36,7 @@ class TorrentController:
         self.peer_chunk_info: Dict[IPPort, controller.RemoteChunkInfo] = dict()
         # self.tracker_addr: IPPort = ("", 0)
         self.thread = threading.Thread(target=self.__run__)
+        self.events = queue.Queue()
         self.torrent_binary = bytearray()
         self.dir_controller = controller.DirectoryController(torrent, torrent_file_path, save_dir)
         if not self.torrent.dummy:
@@ -74,8 +82,46 @@ class TorrentController:
             except Exception as e:
                 print("[TC] Errored when trying to decode torrent from binary")
         print("[TC] Successfully obtain torrent file, size: %s" % (len(self.torrent.__json_str__)))
+        self.dir_controller.update()
         self.dir_controller.build_torrent_directory_structure()
         self.update_peers_chunks()
+        # Start polling
+        self.status = controller.TorrentStatus.TORRENT_STATUS_DOWNLOADING
+        ev_type = 0
+        data = None
+        pending_blocks: Set[int] = set()
+        pending_peer: Dict[IPPort, int] = dict()
+        while not self.dir_controller.download_completed:
+            try:
+                (ev_type, data) = self.events.get(block=True, timeout=1)
+                timeout = False
+            except queue.Empty as e:
+                timeout = True
+                print(e)
+            if not timeout:
+                if ev_type == EV_QUIT:
+                    break
+                elif ev_type == EV_PEER_CHUNK_INFO_UPDATED:
+                    pass
+                elif ev_type == EV_PEER_RESPOND:
+                    peer_addr: IPPort = data
+                    del pending_peer[peer_addr]
+            else:
+                pass
+                self.update_peers_chunks()
+            # TODO: check timeouts
+            available_peers = set(self.peer_list).difference(pending_peer)
+            for peer in available_peers:
+                diff = self.peer_chunk_info[peer].chunks.difference(
+                    self.dir_controller.local_state.local_block)
+                want_chunks = diff.difference(pending_blocks)
+                if len(want_chunks) == 0:
+                    # TODO: pass
+                    continue
+                want_chunk_id = want_chunks.pop()
+                pending_blocks.add(want_chunk_id)
+                pending_peer[peer] = utils.bytes_utils.current_time_ms()
+                self.controller.get_peer_conn(peer).async_request_chunk(self.torrent_hash, want_chunk_id)
 
     def on_peer_chunk_updated(self, peer: IPPort, chunk_info: Set[int]):
         print("[TC] peer (%s:%s) chunk info updated" % peer)
@@ -87,7 +133,7 @@ class TorrentController:
         self.peer_list.clear()
         self.peer_list.extend(peers)
         self.peer_list.remove(self.controller.local_addr)
-        pass
+        self.events.put_nowait((EV_PEER_CHUNK_INFO_UPDATED, None))
 
     def on_torrent_chunk_received(self, bdata: bytes, start: int, end: int, total_length: int):
         if not self.torrent_binary:
@@ -113,16 +159,12 @@ class TorrentController:
             self.dir_controller.close()
         # TODO: Exit
 
-    def start_download(self, save_dir: str, torrent_file_path: str):
-        # if self.__torrent_content_filled__:
-        #     return
+    def start_download(self):
         if self.status != controller.TorrentStatus.TORRENT_STATUS_REGISTERED:
             raise Exception("Register torrent first")
         if self.controller.tracker_status != controller.TrackerStatus.NOTIFIED:
             raise Exception("Notify tracker first")
         self.status = controller.TorrentStatus.TORRENT_STATUS_DOWNLOADING
-        self.save_dir = save_dir
-        self.torrent_file_path = torrent_file_path
         self.thread.start()
 
     def wait_downloaded(self):
@@ -139,3 +181,6 @@ class TorrentController:
         self.peer_list.append(remote_addr)
         if remote_addr not in self.peer_chunk_info:
             self.peer_chunk_info[remote_addr] = controller.RemoteChunkInfo()
+
+    def on_peer_respond(self, peer_addr: IPPort):
+        self.events.put_nowait((EV_PEER_RESPOND, peer_addr))

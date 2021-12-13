@@ -91,7 +91,7 @@ class RequestChunk(BasePacket):
         self.torrent_hash: bytes = b''
         self.chunk_seq_id: int = 0
         self.start_byte: int = 0
-        self.expected_end_byte: int = 0
+        self.expected_end_byte: int = 0xFFFFFFFF
 
     def __pack_internal__(self, w: ByteWriter):
         w.write_bytes(self.torrent_hash)
@@ -111,12 +111,15 @@ class ACKRequestChunk(ACKPacket):
         super(ACKRequestChunk, self).__init__()
         self.reassemble = ReAssembleHeader()
         self.status: int = STATUS_NOT_SET
+        self.chunk_seq_id: int = 0
         self.data: bytes = b''
 
     def __pack_internal__(self, w: ByteWriter):
         w.write_int(self.status)
+        w.write_int(self.chunk_seq_id)
         w.write_bytes(self.data)
 
     def __unpack_internal__(self, r: ByteReader):
         self.status = r.read_int()
+        self.chunk_seq_id = r.read_int()
         self.data = r.read_bytes(r.remain())

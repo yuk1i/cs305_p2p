@@ -18,7 +18,7 @@ class TorrentStatus:
 
 
 class RemoteChunkInfo:
-    UPDATE_INTERVAL = 5
+    UPDATE_INTERVAL = 8
 
     # Update Interval for remote peers -> 5s
     def __init__(self):

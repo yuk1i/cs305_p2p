@@ -55,8 +55,8 @@ class PeerController(controller.Controller):
             active.close()
         self.tracker_conn.close_from_tracker()
 
-    def start_download(self, torrent_hash: str, save_dir: str, torrent_file_path: str):
-        self.active_torrents[torrent_hash].start_download(save_dir, torrent_file_path)
+    def start_download(self, torrent_hash: str):
+        self.active_torrents[torrent_hash].start_download()
 
     def create_peer_conn(self, peer_addr: IPPort):
         if peer_addr not in self.peer_conns:
