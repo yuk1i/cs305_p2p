@@ -1,6 +1,8 @@
 import time
 from typing import Set
 
+import utils.bytes_utils
+
 
 class TrackerStatus:
     NOT_NOTIFIED = 1
@@ -18,17 +20,22 @@ class TorrentStatus:
 
 
 class RemoteChunkInfo:
-    UPDATE_INTERVAL = 8
+    UPDATE_INTERVAL = 4
 
     # Update Interval for remote peers -> 5s
     def __init__(self):
         self.last_update: int = 0  # in ms
         self.chunks: Set[int] = set()
+        self.pending = False
 
     def update(self, chunk_info: Set[int]):
         self.chunks.update(chunk_info)
-        self.last_update = round(time.time() * 1000)
+        self.last_update = utils.bytes_utils.current_time_ms()
+        self.pending = False
 
     def should_update(self):
-        return round(time.time() * 1000) - self.last_update >= self.UPDATE_INTERVAL
+        return utils.bytes_utils.current_time_ms() - self.last_update >= self.UPDATE_INTERVAL * 1000 and not self.pending
+
+    def mark_pending(self):
+        self.pending = True
 

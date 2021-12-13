@@ -118,7 +118,7 @@ class TorrentController:
                 if len(want_chunks) == 0:
                     # TODO: pass
                     continue
-                want_chunk_id = want_chunks.pop()
+                want_chunk_id = random.choice(list(want_chunks))
                 pending_blocks.add(want_chunk_id)
                 pending_peer[peer] = utils.bytes_utils.current_time_ms()
                 self.controller.get_peer_conn(peer).async_request_chunk(self.torrent_hash, want_chunk_id)
@@ -150,6 +150,7 @@ class TorrentController:
         my_block = self.dir_controller.local_state.local_block.copy()
         for peer_addr in self.peer_list:
             if self.peer_chunk_info[peer_addr].should_update():
+                self.peer_chunk_info[peer_addr].mark_pending()
                 p2p_conn = self.controller.get_peer_conn(peer_addr)
                 p2p_conn.async_update_chunk_info(self.torrent_hash, my_block)
 

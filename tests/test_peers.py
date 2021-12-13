@@ -14,46 +14,15 @@ from proxy import Proxy
 from torrent import Torrent
 
 
+def new_peer(port, tracker_addr, upload=0, download=0):
+    p2_addr = ('127.0.0.1', port)
+    p = PeerController(Proxy(upload, download, port), p2_addr, tracker_addr)
+    p.socket.mtu = 65500
+    p.notify_tracker()
+    return p
+
+
 class MyTestCase(unittest.TestCase):
-    def test_torrent_file(self):
-        tracker = TrackerController(Proxy(0, 0, 10086))
-        tracker_addr = ('127.0.0.1', 10086)
-        p1_addr = ("127.0.0.1", 20086)
-        p1 = PeerController(Proxy(0, 0, 20086), p1_addr, tracker_addr)
-        p1.socket.mtu = 65500
-        p1.notify_tracker()
-
-        p2_addr = ('127.0.0.1', 30086)
-        p2 = PeerController(Proxy(0, 0, 30086), p2_addr, tracker_addr)
-        p2.socket.mtu = 65500
-        p2.notify_tracker()
-
-        full_tt = Torrent.generate_torrent("test_torrent", "A Test Torrent")
-        tt_hash = full_tt.torrent_hash
-        dummy_tt = Torrent.create_dummy_torrent(tt_hash)
-
-        p1.register_torrent(full_tt, 'excluded/full.bt', "excluded/full")
-        p2.register_torrent(dummy_tt, 'excluded/dummy.bt', "excluded/dummy")
-
-        p1.retrieve_peer_list(tt_hash)
-        self.assertIn(p2_addr, p1.active_torrents[tt_hash].peer_list)
-
-        p2.retrieve_peer_list(tt_hash)
-        p2.start_download(tt_hash)
-
-        p2.active_torrents[tt_hash].wait_downloaded()
-
-        p1.close_from_tracker()
-        p1.close()
-        p2.close_from_tracker()
-        p2.close()
-        tracker.close()
-
-    def test_dir_controller(self):
-        full_tt = Torrent.load_from_file("excluded/my1.torrent")
-        dir1 = controller.DirectoryController(full_tt, "", "test_torrent")
-        dir1.retrieve_block()
-
     def test_chunk_info(self):
         if os.path.exists("excluded/dummy"):
             shutil.rmtree("excluded/dummy")
@@ -72,6 +41,7 @@ class MyTestCase(unittest.TestCase):
         p2.notify_tracker()
 
         full_tt = Torrent.generate_torrent("test_torrent", "A Test Torrent for download", 204800)
+        # 8403382 bytes in total
         tt_hash = full_tt.torrent_hash
         dummy_tt = Torrent.create_dummy_torrent(tt_hash)
 
@@ -94,6 +64,45 @@ class MyTestCase(unittest.TestCase):
         p2.close()
         tracker.close()
         self.assertEqual(True, True)
+
+    def test_speed(self):
+        if os.path.exists("excluded/dummy"):
+            shutil.rmtree("excluded/dummy")
+        if os.path.exists("excluded/dummy.bt"):
+            os.remove("excluded/dummy.bt")
+        tracker = TrackerController(Proxy(0, 0, 10086))
+        tracker_addr = ('127.0.0.1', 10086)
+
+        p1 = new_peer(20086, tracker_addr, upload=409600)
+        p2 = new_peer(30086, tracker_addr)
+        p3 = new_peer(40086, tracker_addr)
+
+        full_tt = Torrent.generate_torrent("test_torrent", "A Test Torrent for download", 204800)
+        # 8403382 bytes in total
+        tt_hash = full_tt.torrent_hash
+        dummy_tt = Torrent.create_dummy_torrent(tt_hash)
+        dummy_tt3 = Torrent.create_dummy_torrent(tt_hash)
+
+        p1.register_torrent(full_tt, 'excluded/full.bt', "test_torrent")
+
+        p2.register_torrent(dummy_tt, 'excluded/dummy.bt', "excluded/dummy")
+        p3.register_torrent(dummy_tt3, 'excluded/dummy3.bt', "excluded/dummy3")
+
+        tstart = utils.bytes_utils.current_time_ms()
+        p2.start_download(tt_hash)
+        p3.start_download(tt_hash)
+        p2.active_torrents[tt_hash].wait_downloaded()
+        p3.active_torrents[tt_hash].wait_downloaded()
+        tend = utils.bytes_utils.current_time_ms()
+        print("Download use time %s" % (tend - tstart))
+
+        p1.close_from_tracker()
+        p1.close()
+        p2.close_from_tracker()
+        p2.close()
+        p3.close_from_tracker()
+        p3.close()
+        tracker.close()
 
 
 if __name__ == '__main__':
