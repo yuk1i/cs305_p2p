@@ -8,6 +8,7 @@ import time
 import unittest
 
 import controller
+import utils.bytes_utils
 from controller import TrackerController, PeerController, Controller, TrackerStatus, TorrentStatus
 from proxy import Proxy
 from torrent import Torrent
@@ -62,22 +63,28 @@ class MyTestCase(unittest.TestCase):
         tracker_addr = ('127.0.0.1', 10086)
         p1_addr = ("127.0.0.1", 20086)
         p1 = PeerController(Proxy(0, 0, 20086), p1_addr, tracker_addr)
+        p1.socket.mtu = 65500
         p1.notify_tracker()
 
         p2_addr = ('127.0.0.1', 30086)
         p2 = PeerController(Proxy(0, 0, 30086), p2_addr, tracker_addr)
+        p2.socket.mtu = 65500
         p2.notify_tracker()
 
-        full_tt = Torrent.load_from_file("excluded/my1.torrent")
+        full_tt = Torrent.generate_torrent("test_torrent", "A Test Torrent for download", 65400)
         tt_hash = full_tt.torrent_hash
         dummy_tt = Torrent.create_dummy_torrent(tt_hash)
 
         p1.register_torrent(full_tt, 'excluded/full.bt', "test_torrent")
 
         p2.register_torrent(dummy_tt, 'excluded/dummy.bt', "excluded/dummy")
+
+        tstart = utils.bytes_utils.current_time_ms()
         p2.start_download(tt_hash)
 
         p2.active_torrents[tt_hash].wait_downloaded()
+        tend = utils.bytes_utils.current_time_ms()
+        print("Download use time %s" % (tend - tstart))
 
         self.assertTrue(p2.active_torrents[tt_hash].dir_controller.check_all_hash())
 

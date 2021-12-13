@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import time
+from pathlib import Path
 
 from torrent import Torrent, FileObject
 from torrent_local_state import TorrentLocalState
@@ -123,11 +124,14 @@ class DirectoryController:
     def retrieve_block(self, block_seq: int) -> bytes:
         if block_seq not in self.local_state.local_block or block_seq > self.torrent_block_count:
             return b''
-        save_file_path = self._get_save_file_path(self.fseq2fpath[self.bseq2fseq[block_seq]])
         offset = self.torrent.block_size * (block_seq - self.fseq2file[self.bseq2fseq[block_seq]].blocks[0].seq)
-        with open(save_file_path, 'rb') as f:
+        if self.bseq2fseq[block_seq] not in self.opened_files:
+            self.open_files()
+        with self.write_lock:
+            f = self.opened_files[self.bseq2fseq[block_seq]]
             f.seek(offset)
-            return f.read(self.torrent.block_size)
+            data = f.read(self.torrent.block_size)
+        return data
 
     def save_block(self, block_seq: int, data: bytes) -> bool:
         """
@@ -183,7 +187,8 @@ class DirectoryController:
         if fseq in self.opened_files:
             self.opened_files[fseq].close()
         save_path = self._get_save_file_path(rel_path)
-        ff = self.opened_files[fseq] = open(save_path, "wb+")
+        Path(save_path).touch()
+        self.opened_files[fseq] = open(save_path, "rb+")
 
     def close(self):
         self._active = False
@@ -207,3 +212,11 @@ class DirectoryController:
             for ff in self.opened_files.values():
                 ff.flush()
         pass
+
+    def open_files(self):
+        for file in self.torrent.files:
+            rel_dir = file.dir
+            rel_path = pathjoin(rel_dir, file.name)
+            save_path = self._get_save_file_path(rel_path)
+            self.opened_files[file.seq] = open(save_path, "rb+")
+

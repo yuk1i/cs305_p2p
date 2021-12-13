@@ -42,7 +42,6 @@ class Proxy:
                 self.socket.sendto(packet, dst)
             else:
                 time.sleep(0.000001)
-        print("send thread exited %s" % self.port)
 
     def __buffer_thread__(self):
         while self.active:
@@ -51,7 +50,6 @@ class Proxy:
                 self.recv_buffer.put((msg, frm))
             except Exception:
                 time.sleep(0.000001)
-        print("buffer thread exited %s" % self.port)
 
     def __recv_thread__(self):
         while self.active or not self.recv_buffer.empty():
@@ -63,7 +61,6 @@ class Proxy:
             else:
                 time.sleep(0.000001)
         self.recv_queue.put((b'', None))
-        print("recv thread exited %s" % self.port)
 
     def sendto(self, data, address):
         self.send_queue.put((data, address))
