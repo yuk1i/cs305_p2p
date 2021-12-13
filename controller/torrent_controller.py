@@ -122,6 +122,7 @@ class TorrentController:
                 pending_blocks.add(want_chunk_id)
                 pending_peer[peer] = utils.bytes_utils.current_time_ms()
                 self.controller.get_peer_conn(peer).async_request_chunk(self.torrent_hash, want_chunk_id)
+        self.dir_controller.flush_all()
 
     def on_peer_chunk_updated(self, peer: IPPort, chunk_info: Set[int]):
         print("[TC] peer (%s:%s) chunk info updated" % peer)
