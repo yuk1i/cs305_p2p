@@ -80,7 +80,7 @@ class Assembler:
 
         raw = copy.deepcopy(self.raw_data)
         ret: List[bytes] = list()
-        max_p = self.mtu
+        max_p = self.mtu - 16
         cnt: int = 0
         total_bytes: int = len(self.raw_data)
         while len(raw) > 0:
