@@ -22,7 +22,6 @@ class TorrentController:
         self.torrent = torrent
         self.torrent_hash: str = torrent.torrent_hash
         self.controller: controller.PeerController = ctrl
-        self.torrent_binary_filled: bool = not self.torrent.__dummy__
         self.torrent_file_path: str = torrent_file_path
         self.status = controller.TorrentStatus.TORRENT_STATUS_NOT_STARTED
         # self.chunk_status: List[bool] = list()
@@ -52,7 +51,7 @@ class TorrentController:
         #       and start downloading every data block
         # TODO: Improvement here: Load torrent from self.torrent_save_path and check its hash
         peer_index = random.randrange(0, len(self.peer_list))
-        while not self.torrent_binary_filled:
+        while self.torrent.dummy:
             print("start downloading")
             # Download torrent files from peers
             if peer_index >= len(self.peer_list):
@@ -70,7 +69,6 @@ class TorrentController:
                 self.torrent.try_decode_from_binary(self.torrent_binary)
                 self.torrent.__dummy__ = False
                 self.torrent.save_to_file(self.torrent_file_path)
-                self.torrent_binary_filled = True
             except Exception as e:
                 print("[TC] Errored when trying to decode torrent from binary")
         print("[TC] Successfully obtain torrent file, size: %s" % (len(self.torrent.__json_str__)))

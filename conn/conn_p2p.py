@@ -54,13 +54,13 @@ class P2PConn(Conn):
                     return
                 if self.remote_addr not in self.controller.active_torrents[str_hash].peer_list:
                     self.controller.active_torrents[str_hash].on_new_income_peer(self.remote_addr)
-                if not self.controller.active_torrents[str_hash].torrent_binary_filled:
+                if self.controller.active_torrents[str_hash].torrent.dummy:
                     ack.status = STATUS_NOT_READY
                     self.send_packet(ack)
                     return
                 # I have this torrent
                 ack.status = STATUS_OK
-                bdata = self.controller.active_torrents[str_hash].torrent.generate_binary()
+                bdata = self.controller.active_torrents[str_hash].torrent.binary
                 start = min(len(bdata), pkt.since)
                 end = min(len(bdata), pkt.since + pkt.expectedLength)
                 bdata = bdata[start:end]

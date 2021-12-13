@@ -76,6 +76,19 @@ class Torrent(MyDict):
         self.__binary__: bytes = b''
         self.__dummy__ = False
 
+    @property
+    def dummy(self):
+        return self.__dummy__
+
+    @property
+    def binary(self) -> bytes:
+        if self.__dummy__:
+            raise Exception("not download yet")
+        if not self.__binary__:
+            self.__json_str__ = json.dumps(self, sort_keys=True)
+            self.__binary__ = lzma.compress(self.__json_str__.encode(encoding='utf-8'))
+        return self.__binary__
+
     def check_torrent_hash(self) -> bool:
         current_hash = self.torrent_hash
         self.torrent_hash = ""
@@ -93,14 +106,6 @@ class Torrent(MyDict):
     def save_to_file(self, file_path: str) -> None:
         with open(file_path, "w") as f:
             f.write(json.dumps(self))
-
-    def generate_binary(self) -> bytes:
-        if self.__dummy__:
-            raise Exception("not download yet")
-        if not self.__binary__:
-            self.__json_str__ = json.dumps(self, sort_keys=True)
-            self.__binary__ = lzma.compress(self.__json_str__.encode(encoding='utf-8'))
-        return self.__binary__
 
     def try_decode_from_binary(self, binary: bytes):
         self.__json_str__ = lzma.decompress(binary).decode(encoding='utf-8')
