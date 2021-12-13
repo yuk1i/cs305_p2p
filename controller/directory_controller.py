@@ -34,7 +34,6 @@ class DirectoryController:
             self.fseq2fpath[file.seq] = pathjoin(file.dir, file.name)
             for block in file.blocks:
                 self.bseq2fseq[block.seq] = file.seq
-        self.build_torrent_directory_structure()
         self.local_state_path = torrent_file_path + FILE_POSTFIX
         self.local_state: TorrentLocalState = None
         if os.path.exists(self.local_state_path):
@@ -50,7 +49,7 @@ class DirectoryController:
         self.loop_save_thread.start()
         self.auto_save_interval = 30
         self.auto_save_thread: threading.Thread = threading.Thread(target=self._auto_save_local_state)
-        self.auto_save_thread.setDaemon(True)
+        self.auto_save_thread.daemon = True
         self.auto_save_thread.start()
 
     def build_torrent_directory_structure(self):
@@ -58,8 +57,8 @@ class DirectoryController:
             os.mkdir(self.save_dir)
         for file in self.torrent.files:
             rel_dir = file.dir
-            if not os.path.exists(rel_dir):
-                os.makedirs(rel_dir)
+            if not os.path.exists(os.path.normpath(os.path.join(self.save_dir, file.dir))):
+                os.makedirs(os.path.normpath(os.path.join(self.save_dir, file.dir)))
             rel_path = pathjoin(rel_dir, file.name)
             self._allocate_file(rel_path, file.size)
 
@@ -115,7 +114,7 @@ class DirectoryController:
     def _auto_save_local_state(self):
         while self._active:
             timer = threading.Timer(self.auto_save_interval, self._save_local_state)
-            timer.setDaemon(True)
+            timer.daemon = True
             timer.start()
             timer.join()
 
@@ -139,6 +138,5 @@ class DirectoryController:
         :param file_path: file path relative to save path (torrent files base path)
         :return: file path to save to
         """
-        return pathjoin(self.save_dir, file_path)
-
-
+        return os.path.normpath(pathjoin(self.save_dir, file_path))
+        # Fix excluded/dummy/./qwq.txt
