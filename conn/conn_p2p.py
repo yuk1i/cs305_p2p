@@ -24,7 +24,7 @@ class P2PConn(Conn):
             req_type = pkt.reversed & MASK_REVERSED
             state = self.retrieve_state(pkt.identifier)
             if req_type == TYPE_REQUEST_TORRENT:
-                print("[CP2P, {}] Torrent data available".format(self.controller.local_addr))
+                print("[CP2P, {}] Torrent data available, from {}".format(self.controller.local_addr, self.remote_addr))
                 pkt: ACKRequestForTorrent
                 torrent_hash: str = state
                 if pkt.status == STATUS_OK and torrent_hash in self.controller.active_torrents:
@@ -44,10 +44,17 @@ class P2PConn(Conn):
                     tc = self.controller.active_torrents[torrent_hash]
                     if pkt.status == STATUS_OK:
                         if tc.dir_controller.check_chunk_hash(pkt.chunk_seq_id, pkt.data):
-                            print("[CP2P, {}] Save Block {} from {}".format(self.controller.local_addr, pkt.chunk_seq_id, self.remote_addr))
+                            print(
+                                "[CP2P, {}] Save Block {} from {}".format(self.controller.local_addr, pkt.chunk_seq_id,
+                                                                          self.remote_addr))
                             tc.dir_controller.save_block(pkt.chunk_seq_id, pkt.data)
                         else:
                             print("chunk hash failed for id %s" % pkt.chunk_seq_id)
+                    elif pkt.status == STATUS_NOT_READY:
+                        tc.peer_chunk_info[self.remote_addr].remove(pkt.chunk_seq_id)
+                        print("[CP2P, {}] Remote {} declares not ready for part {}".format(self.controller.local_addr,
+                                                                                        self.remote_addr, pkt.chunk_seq_id))
+                        print(tc.peer_chunk_info[self.remote_addr].chunks)
                     tc.on_peer_respond(self.remote_addr)
             self.notify_lock(req_type)
         else:
@@ -101,13 +108,17 @@ class P2PConn(Conn):
                     self.send_packet(ack)
                     return
                 ack.status = STATUS_OK
-                ack.packed_seq_ids = TorrentLocalState.pack_seq_ids(tc.dir_controller.local_state.local_block)
+                my_set = tc.dir_controller.local_state.local_block
+                if tc.upload_mode == controller.MODE_DONT_REPEAT:
+                    my_set = my_set.difference(tc.uploaded)
+                ack.packed_seq_ids = TorrentLocalState.pack_seq_ids(my_set)
                 self.send_packet(ack)
             elif req_type == TYPE_REQUEST_CHUNK:
                 pkt: RequestChunk
                 str_hash = bytes_to_hexstr(pkt.torrent_hash)
                 ack = ACKRequestChunk()
                 ack.set_request(pkt)
+                ack.chunk_seq_id = pkt.chunk_seq_id
                 if str_hash not in self.controller.active_torrents:
                     ack.status = STATUS_NOT_FOUND
                     self.send_packet(ack)
@@ -115,14 +126,23 @@ class P2PConn(Conn):
                 tc = self.controller.active_torrents[str_hash]
                 if self.remote_addr not in tc.peer_list:
                     tc.on_new_income_peer(self.remote_addr)
+                if tc.upload_mode == controller.MODE_DONT_REPEAT:
+                    if pkt.chunk_seq_id in tc.uploaded:
+                        print("[CP2P, {}] Bdata Not Ready for {}, from {}, since uploaded already".format(
+                            self.controller.local_addr, pkt.chunk_seq_id, self.remote_addr))
+                        ack.status = STATUS_NOT_READY
+                        self.send_packet(ack)
+                        return
+                    else:
+                        tc.uploaded.add(pkt.chunk_seq_id)
                 bdata = tc.dir_controller.retrieve_block(pkt.chunk_seq_id)
                 if not bdata:
-                    print("[CP2P, {}] Bdata Not Ready for {}, from {}".format(self.controller.local_addr, pkt.chunk_seq_id, self.remote_addr))
+                    print("[CP2P, {}] Bdata Not Ready for {}, from {}".format(self.controller.local_addr,
+                                                                              pkt.chunk_seq_id, self.remote_addr))
                     ack.status = STATUS_NOT_READY
                     self.send_packet(ack)
                     return
                 ack.status = STATUS_OK
-                ack.chunk_seq_id = pkt.chunk_seq_id
                 ack.data = bdata
                 self.send_packet(ack)
 

@@ -16,6 +16,9 @@ EV_QUIT = 0
 EV_PEER_CHUNK_INFO_UPDATED = 1
 EV_PEER_RESPOND = 2
 
+MODE_DONT_REPEAT = 1
+MODE_FULL = 0
+
 
 class TorrentController:
     def __init__(self, torrent: Torrent, ctrl: controller.PeerController,
@@ -41,6 +44,8 @@ class TorrentController:
         self.dir_controller = controller.DirectoryController(torrent, torrent_file_path, save_dir)
         if not self.torrent.dummy:
             self.dir_controller.check_all_hash()
+        self.upload_mode = MODE_FULL
+        self.uploaded = set()
         # if self.
 
     def __run__(self):
@@ -60,19 +65,20 @@ class TorrentController:
         #       create directory structure
         #       and start downloading every data block
         # TODO: Improvement here: Load torrent from self.torrent_save_path and check its hash
-        peer_index = random.randrange(0, len(self.peer_list))
+        tested_peers = set()
         while self.torrent.dummy:
             print("start downloading")
             # Download torrent files from peers
-            if peer_index >= len(self.peer_list):
+            if len(tested_peers) == len(self.peer_list):
                 self.controller.retrieve_peer_list(self.torrent_hash)
-                peer_index = 0
+                tested_peers.clear()
                 continue
-            p2p_conn = self.controller.get_peer_conn(self.peer_list[peer_index])
+            peer_addr = random.choice(list(set(self.peer_list).difference(tested_peers)))
+            tested_peers.add(peer_addr)
+            p2p_conn = self.controller.get_peer_conn(peer_addr)
             # TODO: Improvements here
             ready = p2p_conn.request_torrent_chunk(self.torrent_hash)
             if not ready:
-                peer_index = peer_index + 1
                 continue
             # TODO: combine binary data, call Torrent.
             try:
@@ -90,7 +96,8 @@ class TorrentController:
         ev_type = 0
         data = None
         pending_blocks: Set[int] = set()
-        pending_peer: Dict[IPPort, int] = dict()
+        pending_peer: Dict[IPPort, Tuple[int, int]] = dict()
+        TIMEOUT = 5
         while not self.dir_controller.download_completed:
             try:
                 (ev_type, data) = self.events.get(block=True, timeout=1)
@@ -105,12 +112,19 @@ class TorrentController:
                     pass
                 elif ev_type == EV_PEER_RESPOND:
                     peer_addr: IPPort = data
+                    _, req_chunk = pending_peer[peer_addr]
                     del pending_peer[peer_addr]
+                    pending_blocks.remove(req_chunk)
             else:
                 pass
                 self.update_peers_chunks()
+            wanted = set(range(1, 1 + self.dir_controller.torrent_block_count)).difference(
+                self.dir_controller.local_state.local_block)
+            print("[T2C,{}] wanted for {},\n\t\thave {}".format(self.controller.local_addr, wanted,
+                                                                self.dir_controller.local_state.local_block))
             # TODO: check timeouts
-            available_peers = set(self.peer_list).difference(pending_peer)
+            available_peers = list(set(self.peer_list).difference(pending_peer.keys()))
+            random.shuffle(available_peers)
             for peer in available_peers:
                 diff = self.peer_chunk_info[peer].chunks.difference(
                     self.dir_controller.local_state.local_block)
@@ -120,8 +134,14 @@ class TorrentController:
                     continue
                 want_chunk_id = random.choice(list(want_chunks))
                 pending_blocks.add(want_chunk_id)
-                pending_peer[peer] = utils.bytes_utils.current_time_ms()
+                pending_peer[peer] = (utils.bytes_utils.current_time_ms(), want_chunk_id)
                 self.controller.get_peer_conn(peer).async_request_chunk(self.torrent_hash, want_chunk_id)
+            # SYNC!!!
+            for paddr in pending_peer:
+                t, chseq = pending_peer[paddr]
+                if utils.bytes_utils.current_time_ms() - t >= TIMEOUT * 1000:
+                    del pending_peer[paddr]
+                    pending_blocks.remove(chseq)
         self.dir_controller.flush_all()
 
     def on_peer_chunk_updated(self, peer: IPPort, chunk_info: Set[int]):

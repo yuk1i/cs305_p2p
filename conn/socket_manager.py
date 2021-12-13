@@ -46,7 +46,7 @@ class SocketManager:
 
     def register(self, addr: IPPort, con: conn.Conn):
         if addr in self.mapper.keys():
-            raise Exception("ConnManager exists for %s" % addr)
+            return
         con.socket = self
         self.mapper[addr] = con
 
