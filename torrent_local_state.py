@@ -32,6 +32,8 @@ class TorrentLocalState:
         ret = list()
         range_start = 0
         size = len(iids)
+        if size == 0:
+            return ret
         max_id = max(iids)
         if size == 0:
             pass

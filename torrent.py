@@ -74,6 +74,7 @@ class Torrent(MyDict):
         self.files: List[FileObject] = list()
         self.__json_str__: str = ''
         self.__binary__: bytes = b''
+        self.__dummy__ = False
 
     def check_torrent_hash(self) -> bool:
         current_hash = self.torrent_hash
@@ -94,7 +95,7 @@ class Torrent(MyDict):
             f.write(json.dumps(self))
 
     def generate_binary(self) -> bytes:
-        if not self.__torrent_file_downloaded__:
+        if self.__dummy__:
             raise Exception("not download yet")
         if not self.__binary__:
             self.__json_str__ = json.dumps(self, sort_keys=True)
@@ -192,5 +193,5 @@ class Torrent(MyDict):
     def create_dummy_torrent(torrent_hash: str) -> Torrent:
         t = Torrent()
         t.torrent_hash = torrent_hash
-        t.__torrent_content_filled__ = False
+        t.__dummy__ = True
         return t

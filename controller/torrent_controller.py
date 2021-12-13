@@ -11,51 +11,48 @@ from utils import IPPort
 
 
 class TorrentController:
-    def __init__(self, torrent_hash: str, ctrl: controller.PeerController,
-                 torrent_file_path: str = '', torrent: Torrent = None):
+    def __init__(self, torrent: Torrent, ctrl: controller.PeerController,
+                 save_dir: str, torrent_file_path: str):
         """
         A torrent controller must be inited by at least the hash of the torrent,
         which can be from the hash str, torrent file (path), or Torrent object.
         :param torrent_hash:
         :param ctrl:
         """
-        self.torrent_hash: str = torrent_hash
+        self.torrent = torrent
+        self.torrent_hash: str = torrent.torrent_hash
         self.controller: controller.PeerController = ctrl
-        self.dir_controller: controller.DirectoryController = None
-        self.torrent_hash: str = torrent_hash
-        self.torrent_binary: bytearray = None
-        self.__torrent_content_filled__ = False
-        if torrent:
-            self.torrent = torrent
-            self.__torrent_content_filled__ = True
-        else:
-            self.torrent = Torrent()
+        self.torrent_binary_filled: bool = not self.torrent.__dummy__
         self.torrent_file_path: str = torrent_file_path
         self.status = controller.TorrentStatus.TORRENT_STATUS_NOT_STARTED
         # self.chunk_status: List[bool] = list()
         self.peer_list: List[IPPort] = list()
-        self.peer_chunk_info: Dict[IPPort, Set[int]] = dict()
+        self.peer_chunk_info: Dict[IPPort, controller.RemoteChunkInfo] = dict()
         # self.tracker_addr: IPPort = ("", 0)
         self.thread = threading.Thread(target=self.__run__)
-        self.torrent_binary: bytearray = bytearray()
+        self.torrent_binary = bytearray()
+        self.dir_controller = controller.DirectoryController(torrent, torrent_file_path, save_dir)
+        # if self.
 
     def __run__(self):
         # Request peers first
         while len(self.peer_list) == 0:
             self.controller.retrieve_peer_list(self.torrent_hash)
             # it will call on_peer_list_updated, and it's blocking
-            time.sleep(10)
+            if len(self.peer_list) == 0:
+                time.sleep(1)
         print("[TC] Get peer list %s" % self.torrent_hash)
         self.status = controller.TorrentStatus.TORRENT_STATUS_METADATA
         for peer in self.peer_list:
             self.controller.create_peer_conn(peer)
+            self.peer_chunk_info[peer] = controller.RemoteChunkInfo()
         # Then, Request chunks for torrent files, download them, try to decode torrent files
         # If decoded successfully, save torrent file,
         #       create directory structure
         #       and start downloading every data block
         # TODO: Improvement here: Load torrent from self.torrent_save_path and check its hash
         peer_index = random.randrange(0, len(self.peer_list))
-        while not self.__torrent_content_filled__:
+        while not self.torrent_binary_filled:
             print("start downloading")
             # Download torrent files from peers
             if peer_index >= len(self.peer_list):
@@ -71,12 +68,19 @@ class TorrentController:
             # TODO: combine binary data, call Torrent.
             try:
                 self.torrent.try_decode_from_binary(self.torrent_binary)
+                self.torrent.__dummy__ = False
                 self.torrent.save_to_file(self.torrent_file_path)
-                self.__torrent_content_filled__ = True
+                self.torrent_binary_filled = True
             except Exception as e:
                 print("[TC] Errored when trying to decode torrent from binary")
         print("[TC] Successfully obtain torrent file, size: %s" % (len(self.torrent.__json_str__)))
-        self.dir_controller = controller.DirectoryController(self.torrent, self.torrent_file_path)
+        self.dir_controller.build_torrent_directory_structure()
+        self.update_peers_chunks()
+
+    def on_peer_chunk_updated(self, peer: IPPort, chunk_info: Set[int]):
+        print("[TC] peer (%s:%s) chunk info updated" % peer)
+        self.peer_chunk_info[peer].update(chunk_info)
+        pass
 
     def on_peer_list_update(self, peers: List[IPPort]):
         print("[TorrentCtrl] {} Peer List updated: {}".format(self.torrent_hash, peers))
@@ -89,6 +93,18 @@ class TorrentController:
         if not self.torrent_binary:
             self.torrent_binary = bytearray(total_length)
         self.torrent_binary[start: start + end] = bdata
+
+    def update_peers_chunks(self):
+        """
+        Update Peers chunk info, and send mine
+        :return:
+        """
+        # Update Chunk Info
+        my_block = self.dir_controller.local_state.local_block.copy()
+        for peer_addr in self.peer_list:
+            if self.peer_chunk_info[peer_addr].should_update():
+                p2p_conn = self.controller.get_peer_conn(peer_addr)
+                p2p_conn.async_update_chunk_info(self.torrent_hash, my_block)
 
     def close(self):
         if self.thread.is_alive():
@@ -112,7 +128,7 @@ class TorrentController:
     def wait_downloaded(self):
         self.thread.join()
 
-    def on_new_income_peer(self, remote_addr: IPPort, chunk_list: List[int] = None):
+    def on_new_income_peer(self, remote_addr: IPPort):
         """
         通过 RequestForTorrent / ChunkInfoUpdate 来学习到的新peer
         :param remote_addr:
@@ -122,7 +138,4 @@ class TorrentController:
         print("[TC] New Income Peer %s:%s" % remote_addr)
         self.peer_list.append(remote_addr)
         if remote_addr not in self.peer_chunk_info:
-            self.peer_chunk_info[remote_addr] = set()
-        if chunk_list:
-            self.peer_chunk_info[remote_addr].update(chunk_list)
-
+            self.peer_chunk_info[remote_addr] = controller.RemoteChunkInfo()
