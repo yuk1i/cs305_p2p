@@ -71,7 +71,7 @@ class MyTestCase(unittest.TestCase):
         p2.socket.mtu = 65500
         p2.notify_tracker()
 
-        full_tt = Torrent.generate_torrent("test_torrent", "A Test Torrent for download", 65400)
+        full_tt = Torrent.generate_torrent("test_torrent", "A Test Torrent for download", 204800)
         tt_hash = full_tt.torrent_hash
         dummy_tt = Torrent.create_dummy_torrent(tt_hash)
 
