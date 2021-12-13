@@ -136,12 +136,13 @@ class TorrentController:
                 pending_blocks.add(want_chunk_id)
                 pending_peer[peer] = (utils.bytes_utils.current_time_ms(), want_chunk_id)
                 self.controller.get_peer_conn(peer).async_request_chunk(self.torrent_hash, want_chunk_id)
-            # SYNC!!!
-            for paddr in pending_peer:
+            # Fix Remove during iteration
+            for paddr in list(pending_peer):
                 t, chseq = pending_peer[paddr]
                 if utils.bytes_utils.current_time_ms() - t >= TIMEOUT * 1000:
                     del pending_peer[paddr]
                     pending_blocks.remove(chseq)
+                    print("[TIMEOUTED] from {} requesting block {} to {}".format(self.controller.local_addr, chseq, paddr))
         self.dir_controller.flush_all()
 
     def on_peer_chunk_updated(self, peer: IPPort, chunk_info: Set[int]):
