@@ -19,10 +19,12 @@ class MyTestCase(unittest.TestCase):
         tracker_addr = ('127.0.0.1', 10086)
         p1_addr = ("127.0.0.1", 20086)
         p1 = PeerController(Proxy(0, 0, 20086), p1_addr, tracker_addr)
+        p1.socket.mtu = 65500
         p1.notify_tracker()
 
         p2_addr = ('127.0.0.1', 30086)
         p2 = PeerController(Proxy(0, 0, 30086), p2_addr, tracker_addr)
+        p2.socket.mtu = 65500
         p2.notify_tracker()
 
         full_tt = Torrent.generate_torrent("test_torrent", "A Test Torrent")

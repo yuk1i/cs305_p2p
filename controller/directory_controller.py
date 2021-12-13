@@ -1,5 +1,7 @@
 from __future__ import annotations
 
+import time
+
 from torrent import Torrent, FileObject
 from torrent_local_state import TorrentLocalState
 import os
@@ -9,7 +11,7 @@ import threading
 from utils import hash_utils
 from utils.path_utils import *
 
-from typing import Dict, Set, List
+from typing import Dict, Set, List, BinaryIO
 
 '''
 考虑加指定torrent中要下载的文件功能，先摸了
@@ -33,6 +35,7 @@ class DirectoryController:
         self.bseq2fseq: Dict[int, int] = {}  # map block to file relative path
         self.local_state_path = torrent_file_path + FILE_POSTFIX
         self.local_state: TorrentLocalState = None
+        self.opened_files: Dict[int, BinaryIO] = dict()
         # if os.path.exists(self.local_state_path):
         #     try:
         #         self.local_state = self._init_local_state()
@@ -83,7 +86,7 @@ class DirectoryController:
             if not os.path.exists(os.path.normpath(os.path.join(self.save_dir, file.dir))):
                 os.makedirs(os.path.normpath(os.path.join(self.save_dir, file.dir)))
             rel_path = pathjoin(rel_dir, file.name)
-            self._allocate_file(rel_path, file.size)
+            self._allocate_file(file.seq, rel_path, file.size)
 
     def check_file_hash(self, fseq: int) -> bool:
         if self.torrent.dummy:
@@ -136,13 +139,12 @@ class DirectoryController:
         if block_seq in self.local_state.local_block or block_seq > self.torrent_block_count:
             print("block skipped for %s" % block_seq)
             return False
-        save_file_path = self._get_save_file_path(self.fseq2fpath[self.bseq2fseq[block_seq]])
         offset = self.torrent.block_size * (block_seq - self.torrent.get_file(self.bseq2fseq[block_seq]).blocks[0].seq)
         with self.write_lock:
-            with open(save_file_path, 'wb') as f:
-                f.seek(offset)
-                f.write(data)
-                self._update_local_state(block_seq)
+            f = self.opened_files[self.bseq2fseq[block_seq]]
+            f.seek(offset, 0)
+            f.write(data)
+            self._update_local_state(block_seq)
         return True
 
     @property
@@ -177,17 +179,17 @@ class DirectoryController:
     #         timer.start()
     #         timer.join()
 
-    def _allocate_file(self, rel_path: str, size: int):
+    def _allocate_file(self, fseq: int, rel_path: str, size: int):
+        if fseq in self.opened_files:
+            self.opened_files[fseq].close()
         save_path = self._get_save_file_path(rel_path)
-        if os.path.exists(save_path):
-            pass
-        else:
-            with open(save_path, 'wb') as f:
-                f.seek(size - 1)
-                f.write(b'\x00')
+        ff = self.opened_files[fseq] = open(save_path, "wb+")
 
     def close(self):
         self._active = False
+        for f in self.opened_files.values():
+            f.flush()
+            f.close()
         # self.auto_save_thread.join()
         # self._save_local_state()
         # self.loop_save_thread.join()
@@ -199,3 +201,9 @@ class DirectoryController:
         """
         return os.path.normpath(pathjoin(self.save_dir, file_path))
         # Fix excluded/dummy/./qwq.txt
+
+    def flush_all(self):
+        with self.write_lock:
+            for ff in self.opened_files.values():
+                ff.flush()
+        pass

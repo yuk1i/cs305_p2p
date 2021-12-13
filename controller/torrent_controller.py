@@ -169,6 +169,7 @@ class TorrentController:
 
     def wait_downloaded(self):
         self.thread.join()
+        self.dir_controller.flush_all()
 
     def on_new_income_peer(self, remote_addr: IPPort):
         """
