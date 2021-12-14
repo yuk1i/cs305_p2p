@@ -58,6 +58,10 @@ class PeerController(controller.Controller):
     def start_download(self, torrent_hash: str):
         self.active_torrents[torrent_hash].start_download()
 
+    def stop_torrent(self, torrent_hash: str):
+        self.active_torrents[torrent_hash].close()
+        del self.active_torrents
+
     def create_peer_conn(self, peer_addr: IPPort):
         if peer_addr not in self.peer_conns:
             self.peer_conns[peer_addr] = conn.P2PConn(peer_addr, self)

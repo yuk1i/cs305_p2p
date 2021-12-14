@@ -17,7 +17,7 @@ class Controller:
         self.local_addr = addr
 
     def accept_conn(self, src_addr: IPPort) -> conn.Conn:
-        print("[Controller] : new Conn from %s:%s" % src_addr)
+        print("[Controller] : new Conn from %s:%s, ignored" % src_addr)
         return None
 
     def close(self):

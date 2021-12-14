@@ -176,6 +176,7 @@ class TorrentController:
                 p2p_conn.async_update_chunk_info(self.torrent_hash, my_block)
 
     def close(self):
+        self.events.put_nowait((EV_QUIT, None))
         if self.thread.is_alive():
             self.thread.join()
         if self.dir_controller:
