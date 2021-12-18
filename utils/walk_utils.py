@@ -1,3 +1,7 @@
+"""
+method 'walk' and '_walk' are copied from python source code in os module.
+"""
+
 import sys
 from os import *
 import posixpath
