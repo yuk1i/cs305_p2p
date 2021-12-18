@@ -70,8 +70,10 @@ class DirectoryController:
 
     def calc_all_downloaded_blocks(self):
         for file in self.torrent.files:
-            fp = self.fseq2fpath[file.seq]
-            with open(self._get_save_file_path(fp), "rb") as f:
+            save_path = self._get_save_file_path(self.fseq2fpath[file.seq])
+            if not os.path.exists(save_path):
+                continue
+            with open(save_path, "rb") as f:
                 for b in file.blocks:
                     chunk = f.read(self.torrent.block_size)
                     if chunk == b'':
@@ -95,8 +97,10 @@ class DirectoryController:
         fo: FileObject = self.torrent.get_file(fseq)
         if fo is None:
             return False
-        fpath = self.fseq2fpath[fseq]
-        return hash_utils.hash_file(self._get_save_file_path(fpath)) == fo.hash
+        save_path = self._get_save_file_path(self.fseq2fpath[fseq])
+        if not os.path.exists(save_path):
+            return False
+        return hash_utils.hash_file(save_path) == fo.hash
 
     def check_chunk_hash(self, bseq: int, bdata: bytes) -> bool:
         if self.torrent.dummy:
@@ -111,6 +115,9 @@ class DirectoryController:
             if not self.check_file_hash(f.seq):
                 print("file %s not matched" % f.name)
                 fpath = self._get_save_file_path(self.fseq2fpath[f.seq])
+                if not os.path.exists(fpath):
+                    print("file %s not created" % fpath)
+                    continue
                 with open(fpath, "rb") as ff:
                     for b in f.blocks:
                         chunk = ff.read(self.torrent.block_size)

@@ -5,7 +5,7 @@ import lzma
 import json
 import os
 import pprint
-from typing import List
+from typing import List, Dict
 from utils.MyDict import MyDict
 from utils import hash_utils
 from utils import path_utils
