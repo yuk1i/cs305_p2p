@@ -37,7 +37,7 @@ class SocketManager:
                 if not peer:
                     print("[Socket] Reject Connection From %s:%s" % src_addr)
                     return
-            self.mapper[src_addr].connectionStatus.feed_downlink(data)
+            self.mapper[src_addr].connectionStatus.feed_downlink(len(data))
             pkt = packet.deserializer.deserialize_packet(data)
             self.on_pkt_recv(src_addr, pkt)
 
@@ -45,13 +45,15 @@ class SocketManager:
         peer: conn.Conn = self.mapper[dst_addr]
         if pkt.reassemble.enabled:
             pkts = conn.Assembler(pkt, self.mtu).boxing()
+            total_size = 0
             for pdata in pkts:
                 self.proxy.sendto(pdata, dst_addr)
-                peer.connectionStatus.feed_uplink(pdata)
+                total_size += len(pdata)
+            peer.connectionStatus.feed_uplink(total_size)
         else:
             data = pkt.pack()
             self.proxy.sendto(data, dst_addr)
-            peer.connectionStatus.feed_uplink(data)
+            peer.connectionStatus.feed_uplink(len(data))
             # non blocking
 
     def register(self, addr: IPPort, con: conn.Conn):

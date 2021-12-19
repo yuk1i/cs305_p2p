@@ -19,7 +19,6 @@ class TrackerController(controller.Controller):
         # torrents maps a torrent_hash to a peer_addr list indicating who has this torrent_hash
 
     def accept_conn(self, src_addr: IPPort) -> conn.Conn:
-        super(TrackerController, self).accept_conn(src_addr)
         con = conn.TrackerConn(src_addr, self)
         self.conns.append(con)
         return con
