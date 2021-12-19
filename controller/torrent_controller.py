@@ -113,7 +113,7 @@ class TorrentController:
                 elif ev_type == EV_PEER_CHUNK_INFO_UPDATED:
                     pass
                 elif ev_type == EV_PEER_RESPOND:
-                    peer_addr: IPPort = data
+                    (peer_addr, succeed, chunk_seq_id) = data
                     if peer_addr in pending_peer:
                         _, req_chunk = pending_peer[peer_addr]
                         del pending_peer[peer_addr]
@@ -145,7 +145,8 @@ class TorrentController:
                 if utils.bytes_utils.current_time_ms() - t >= TIMEOUT * 1000:
                     del pending_peer[paddr]
                     pending_blocks.remove(chseq)
-                    print("[TIMEOUTED] from {} requesting block {} to {}".format(self.controller.local_addr, chseq, paddr))
+                    print("[TIMEOUTED] from {} requesting block {} to {}".format(self.controller.local_addr, chseq,
+                                                                                 paddr))
         self.dir_controller.flush_all()
 
     def on_peer_chunk_updated(self, peer: IPPort, chunk_info: Set[int]):
@@ -167,7 +168,7 @@ class TorrentController:
 
     def update_peers_chunks(self):
         """
-        Update Peers chunk info, and send mine
+        Send Update chunk info Request to peers, and send mine
         :return:
         """
         # Update Chunk Info
@@ -210,5 +211,5 @@ class TorrentController:
         if remote_addr not in self.peer_chunk_info:
             self.peer_chunk_info[remote_addr] = controller.RemoteChunkInfo()
 
-    def on_peer_respond(self, peer_addr: IPPort):
-        self.events.put_nowait((EV_PEER_RESPOND, peer_addr))
+    def on_peer_respond_chunk_req(self, peer_addr: IPPort, succeeded: bool, block_id: int):
+        self.events.put_nowait((EV_PEER_RESPOND, (peer_addr, succeeded, block_id)))

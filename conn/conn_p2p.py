@@ -54,8 +54,7 @@ class P2PConn(Conn):
                         tc.peer_chunk_info[self.remote_addr].remove(pkt.chunk_seq_id)
                         print("[CP2P, {}] Remote {} declares not ready for part {}".format(self.controller.local_addr,
                                                                                         self.remote_addr, pkt.chunk_seq_id))
-                        print(tc.peer_chunk_info[self.remote_addr].chunks)
-                    tc.on_peer_respond(self.remote_addr)
+                    tc.on_peer_respond_chunk_req(self.remote_addr, pkt.status == STATUS_OK, pkt.chunk_seq_id)
             self.notify_lock(req_type)
         else:
             # Request
