@@ -13,32 +13,6 @@ import proxy
 from packet.base_packet import BasePacket, FLAG_REASSEMBLE, MASK_REVERSED
 
 from utils import bytes_utils, IPPort
-from math import floor
-
-
-class Contribution:
-
-    OneContrib = namedtuple('OneContrib', ['size', 'time'])
-
-    def __init__(self):
-        self._rate: int = 0
-        self._list: List[Contribution.OneContrib] = []
-
-    def feed_packet(self, packet: bytes):
-        pass
-
-    def get_rate(self) -> int:
-        pass
-
-    def update_rate(self):
-        pass
-
-class ConnectionStatus:
-
-    def __init__(self):
-        self.last_active: int = floor(time.time())
-        self.uplink: Contribution = Contribution()
-        self.downlink: Contribution = Contribution()
 
 
 class SocketManager:
@@ -46,7 +20,6 @@ class SocketManager:
         self.proxy = pxy
         self.controller = ctrl
         self.mapper: Dict[IPPort, conn.Conn] = dict()
-        self.connection_status: Dict[conn.Conn, ConnectionStatus] = {}
         self.mtu = 1460
         # self.peers: List[ConnManager] = list()
         self.reassemblers: Dict[int, conn.ReAssembler] = dict()
@@ -59,17 +32,21 @@ class SocketManager:
             if not data and not self.proxy.active:
                 print("Socket Manager exited")
                 return
+            self.mapper[src_addr].connectionStatus.feed_downlink(data)
             pkt = packet.deserializer.deserialize_packet(data)
             self.on_pkt_recv(src_addr, pkt)
 
-    def send_packet(self, pkt: BasePacket, dst_addr: IPPort):
+    def send_packet(self, pkt: BasePacket, dst_addr: IPPort, src_addr: IPPort):
+        peer: conn.Conn = self.mapper[src_addr]
         if pkt.reassemble.enabled:
             pkts = conn.Assembler(pkt, self.mtu).boxing()
             for pdata in pkts:
                 self.proxy.sendto(pdata, dst_addr)
+                peer.connectionStatus.feed_uplink(pdata)
         else:
             data = pkt.pack()
             self.proxy.sendto(data, dst_addr)
+            peer.connectionStatus.feed_uplink(data)
             # non blocking
 
     def register(self, addr: IPPort, con: conn.Conn):

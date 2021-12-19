@@ -20,8 +20,8 @@ class ConnectionStatus:
         self._downlink_rate: int = 0
         self._downlink_list: List[OneContrib] = []
 
-    def feed_uplink(self, packet: BasePacket):
-        self._uplink_list.append((len(packet.pack()), self.get_cur()))
+    def feed_uplink(self, packet: bytes):
+        self._uplink_list.append((len(packet), self.get_cur()))
 
     def get_uplink_rate(self) -> int:
         self._update_uplink_rate()
@@ -40,9 +40,9 @@ class ConnectionStatus:
         if valid_index:
             self._uplink_list = self._uplink_list[valid_index:]
 
-    def feed_downlink(self, packet: BasePacket):
+    def feed_downlink(self, packet: bytes):
         self.last_active = self.get_cur()
-        self._downlink_list.append((len(packet.pack()), self.last_active))
+        self._downlink_list.append((len(packet), self.last_active))
 
     def get_downlink_rate(self):
         self._update_downlink_rate()

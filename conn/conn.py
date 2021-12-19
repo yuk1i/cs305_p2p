@@ -62,11 +62,9 @@ class Conn:
     def recv_packet(self, packet: BasePacket):
         event = (EVTYPE_INCOMING_PACKET, packet)
         self.__recv_queue__.put_nowait(event)
-        self.connectionStatus.feed_downlink(packet)
 
     def send_packet(self, packet: BasePacket):
         self.controller.socket.send_packet(packet, self.remote_addr)
-        self.connectionStatus.feed_uplink(packet)
 
     def new_identifier(self) -> int:
         ident = bytes_to_int(random_short())
