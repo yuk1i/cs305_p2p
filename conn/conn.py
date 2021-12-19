@@ -8,7 +8,7 @@ import queue
 
 import controller
 from .connection_status import ConnectionStatus
-from packet.base_packet import BasePacket
+from packet.base_packet import BasePacket, TYPE_ACK
 from utils import IPPort
 from utils.bytes_utils import random_short, bytes_to_int, current_time_ms
 
@@ -66,12 +66,13 @@ class Conn:
         pass
 
     def recv_packet(self, packet: BasePacket):
-        with self.lock:
-            if packet.identifier not in self.pending_packet:
-                print("[Conn] Recv timeouted packet")
-                # dropped packet
-            else:
-                del self.pending_packet[packet.identifier]
+        if packet.type == TYPE_ACK:
+            with self.lock:
+                if packet.type == TYPE_ACK and packet.identifier not in self.pending_packet:
+                    print("[Conn] Recv timeouted packet")
+                    # dropped packet
+                else:
+                    del self.pending_packet[packet.identifier]
         event = (EVTYPE_INCOMING_PACKET, packet)
         self.__recv_queue__.put_nowait(event)
 
