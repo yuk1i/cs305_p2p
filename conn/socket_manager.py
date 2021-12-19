@@ -1,8 +1,9 @@
 from __future__ import annotations
 
 import threading
+import time
 from collections import namedtuple
-from typing import Dict, Tuple
+from typing import Dict, Tuple, List
 
 import controller
 import packet.deserializer
@@ -12,6 +13,32 @@ import proxy
 from packet.base_packet import BasePacket, FLAG_REASSEMBLE, MASK_REVERSED
 
 from utils import bytes_utils, IPPort
+from math import floor
+
+
+class Contribution:
+
+    OneContrib = namedtuple('OneContrib', ['size', 'time'])
+
+    def __init__(self):
+        self._rate: int = 0
+        self._list: List[Contribution.OneContrib] = []
+
+    def feed_packet(self, packet: bytes):
+        pass
+
+    def get_rate(self) -> int:
+        pass
+
+    def update_rate(self):
+        pass
+
+class ConnectionStatus:
+
+    def __init__(self):
+        self.last_active: int = floor(time.time())
+        self.uplink: Contribution = Contribution()
+        self.downlink: Contribution = Contribution()
 
 
 class SocketManager:
@@ -19,6 +46,7 @@ class SocketManager:
         self.proxy = pxy
         self.controller = ctrl
         self.mapper: Dict[IPPort, conn.Conn] = dict()
+        self.connection_status: Dict[conn.Conn, ConnectionStatus] = {}
         self.mtu = 1460
         # self.peers: List[ConnManager] = list()
         self.reassemblers: Dict[int, conn.ReAssembler] = dict()
@@ -80,6 +108,7 @@ class SocketManager:
 
     def close(self):
         for remote_addr in self.mapper.keys():
+            self.unregister(remote_addr)
             self.mapper[remote_addr].close()
         self.mapper.clear()
         self.proxy.close()
