@@ -7,9 +7,10 @@ from .torrent_controller import TorrentController, MODE_DONT_REPEAT
 from .directory_controller import DirectoryController
 from .status import TrackerStatus, TorrentStatus, RemoteChunkInfo
 from .dummy_dir_controller import DummyDirectoryController
+from . import download
 
 __all__ = ['Controller', 'TrackerController', 'PeerController',
            'TorrentController', 'DirectoryController', 'TrackerStatus',
            'TorrentStatus', 'RemoteChunkInfo', 'MODE_DONT_REPEAT',
-           'DummyDirectoryController'
+           'DummyDirectoryController', 'download'
            ]

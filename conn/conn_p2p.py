@@ -40,6 +40,7 @@ class P2PConn(Conn):
             elif req_type == TYPE_REQUEST_CHUNK:
                 pkt: ACKRequestChunk
                 torrent_hash: str = state[0]
+                success = False
                 if torrent_hash in self.controller.active_torrents:
                     tc = self.controller.active_torrents[torrent_hash]
                     if pkt.status == STATUS_OK:
@@ -48,6 +49,7 @@ class P2PConn(Conn):
                                 "[CP2P, {}] Save Block {} from {}".format(self.controller.local_addr, pkt.chunk_seq_id,
                                                                           self.remote_addr))
                             tc.dir_controller.save_block(pkt.chunk_seq_id, pkt.data)
+                            success = True
                         else:
                             print("chunk hash failed for id %s" % pkt.chunk_seq_id)
                     elif pkt.status == STATUS_NOT_READY:
@@ -55,7 +57,7 @@ class P2PConn(Conn):
                         print("[CP2P, {}] Remote {} declares not ready for part {}".format(self.controller.local_addr,
                                                                                            self.remote_addr,
                                                                                            pkt.chunk_seq_id))
-                    tc.on_peer_respond_chunk_req(self.remote_addr, pkt.status == STATUS_OK, pkt.chunk_seq_id)
+                    tc.on_peer_respond_chunk_req(self.remote_addr, success, pkt.chunk_seq_id)
             self.notify_lock(req_type)
         else:
             # Request

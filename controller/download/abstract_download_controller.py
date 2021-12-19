@@ -11,6 +11,14 @@ class AbstractDownloadController:
         self.controller: controller.TorrentController = torrent_ctrl
         pass
 
+    @property
+    def peer_list(self):
+        return self.controller.peer_list
+
+    @property
+    def peer_chunk_info(self):
+        return self.controller.peer_chunk_info
+
     def on_peer_respond_succeed(self, peer_addr: IPPort, chunk_seq_id: int):
         pass
 
@@ -25,4 +33,7 @@ class AbstractDownloadController:
         Get Next Download Tasks
         :return: A list of tasks. For each task, it contains peer addr and wanting chunks seq id
         """
+        pass
+
+    def on_new_peer(self, peer_addr: IPPort):
         pass
