@@ -45,6 +45,11 @@ class PeerToTrackerConn(conn.Conn):
                 pass
             self.notify_lock(req_type)
 
+    def close(self):
+        pass
+        # self.active = False
+        # super(PeerToTrackerConn).close()
+
     def notify(self, my_addr: IPPort):
         notify_req = NotifyPacket()
         notify_req.ipv4_address = ipv4_to_int(my_addr[0])
