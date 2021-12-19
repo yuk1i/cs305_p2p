@@ -80,8 +80,8 @@ class SocketManager:
 
     def close(self):
         for remote_addr in self.mapper.keys():
-            self.unregister(remote_addr)
             self.mapper[remote_addr].close()
+        self.mapper.clear()
         self.proxy.close()
         self.thread.join()
 

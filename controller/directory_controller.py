@@ -200,7 +200,7 @@ class DirectoryController:
         self._active = False
         for f in self.opened_files.values():
             f.flush()
-            f.close()
+            # f.close()
         # self.auto_save_thread.join()
         # self._save_local_state()
         # self.loop_save_thread.join()
