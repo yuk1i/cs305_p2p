@@ -15,6 +15,7 @@ from utils import IPPort
 EV_QUIT = 0
 EV_PEER_CHUNK_INFO_UPDATED = 1
 EV_PEER_RESPOND = 2
+EV_CHUNK_TIMEOUT = 3
 
 MODE_DONT_REPEAT = 1
 MODE_FULL = 0
@@ -81,6 +82,7 @@ class TorrentController:
             p2p_conn = self.controller.get_peer_conn(peer_addr)
             # TODO: Improvements here
             ready = p2p_conn.request_torrent_chunk(self.torrent_hash)
+            # Blocking wait for reply, on_torrent_chunk_received is called, return whether reply is received
             if not ready:
                 continue
             # TODO: combine binary data, call Torrent.
@@ -118,6 +120,8 @@ class TorrentController:
                         _, req_chunk = pending_peer[peer_addr]
                         del pending_peer[peer_addr]
                         pending_blocks.remove(req_chunk)
+                elif ev_type == EV_CHUNK_TIMEOUT:
+                    pass
             else:
                 pass
                 self.update_peers_chunks()
@@ -149,6 +153,12 @@ class TorrentController:
                                                                                  paddr))
         self.dir_controller.flush_all()
 
+    def on_peer_respond_chunk_req(self, peer_addr: IPPort, succeeded: bool, block_id: int):
+        self.events.put_nowait((EV_PEER_RESPOND, (peer_addr, succeeded, block_id)))
+
+    def on_chunk_timeout(self, remote_addr, block_seq):
+        self.events.put_nowait((EV_CHUNK_TIMEOUT, (remote_addr, block_seq)))
+
     def on_peer_chunk_updated(self, peer: IPPort, chunk_info: Set[int]):
         print("[TC] peer (%s:%s) chunk info updated" % peer)
         self.peer_chunk_info[peer].update(chunk_info)
@@ -164,7 +174,21 @@ class TorrentController:
     def on_torrent_chunk_received(self, bdata: bytes, start: int, end: int, total_length: int):
         if not self.torrent_binary:
             self.torrent_binary = bytearray(total_length)
+        if len(self.torrent_binary) < total_length:
+            self.torrent_binary.extend(b'\x00' * (total_length - len(self.torrent_binary)))
         self.torrent_binary[start: start + end] = bdata
+
+    def on_new_income_peer(self, remote_addr: IPPort):
+        """
+        通过 RequestForTorrent / ChunkInfoUpdate 来学习到的新peer, 立即设置 peer_chunk_info
+        :param remote_addr:
+        :param chunk_list:
+        :return:
+        """
+        print("[TC] New Income Peer %s:%s" % remote_addr)
+        self.peer_list.append(remote_addr)
+        if remote_addr not in self.peer_chunk_info:
+            self.peer_chunk_info[remote_addr] = controller.RemoteChunkInfo()
 
     def update_peers_chunks(self):
         """
@@ -179,14 +203,6 @@ class TorrentController:
                 p2p_conn = self.controller.get_peer_conn(peer_addr)
                 p2p_conn.async_update_chunk_info(self.torrent_hash, my_block)
 
-    def close(self):
-        self.events.put_nowait((EV_QUIT, None))
-        if self.thread.is_alive():
-            self.thread.join()
-        if self.dir_controller:
-            self.dir_controller.close()
-        # TODO: Exit
-
     def start_download(self):
         if self.status != controller.TorrentStatus.TORRENT_STATUS_REGISTERED:
             raise Exception("Register torrent first")
@@ -199,17 +215,10 @@ class TorrentController:
         self.thread.join()
         self.dir_controller.flush_all()
 
-    def on_new_income_peer(self, remote_addr: IPPort):
-        """
-        通过 RequestForTorrent / ChunkInfoUpdate 来学习到的新peer
-        :param remote_addr:
-        :param chunk_list:
-        :return:
-        """
-        print("[TC] New Income Peer %s:%s" % remote_addr)
-        self.peer_list.append(remote_addr)
-        if remote_addr not in self.peer_chunk_info:
-            self.peer_chunk_info[remote_addr] = controller.RemoteChunkInfo()
-
-    def on_peer_respond_chunk_req(self, peer_addr: IPPort, succeeded: bool, block_id: int):
-        self.events.put_nowait((EV_PEER_RESPOND, (peer_addr, succeeded, block_id)))
+    def close(self):
+        self.events.put_nowait((EV_QUIT, None))
+        if self.thread.is_alive():
+            self.thread.join()
+        if self.dir_controller:
+            self.dir_controller.close()
+        # TODO: Exit

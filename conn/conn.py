@@ -77,8 +77,6 @@ class Conn:
 
     def send_packet(self, packet: BasePacket):
         self.controller.socket.send_packet(packet, self.remote_addr)
-        with self.lock:
-            self.pending_packet[packet.identifier] = (packet.type, current_time_ms())
 
     def new_identifier(self) -> int:
         ident = bytes_to_int(random_short())
@@ -106,6 +104,8 @@ class Conn:
             if packet.type not in self.waiter:
                 self.waiter[packet.type] = threading.Condition()
         self.send_packet(packet)
+        with self.lock:
+            self.pending_packet[packet.identifier] = (packet.type, current_time_ms())
         return packet.identifier
 
     def wait(self, itype: int, timeout: int = None) -> bool:

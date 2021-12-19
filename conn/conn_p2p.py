@@ -1,6 +1,6 @@
 from __future__ import annotations
 
-from typing import Tuple
+from typing import Tuple, Any
 
 import controller
 from conn import Conn
@@ -39,7 +39,7 @@ class P2PConn(Conn):
                     tc.on_peer_chunk_updated(self.remote_addr, TorrentLocalState.unpack_seq_ids(pkt.packed_seq_ids))
             elif req_type == TYPE_REQUEST_CHUNK:
                 pkt: ACKRequestChunk
-                torrent_hash: str = state
+                torrent_hash: str = state[0]
                 if torrent_hash in self.controller.active_torrents:
                     tc = self.controller.active_torrents[torrent_hash]
                     if pkt.status == STATUS_OK:
@@ -53,7 +53,8 @@ class P2PConn(Conn):
                     elif pkt.status == STATUS_NOT_READY:
                         tc.peer_chunk_info[self.remote_addr].remove(pkt.chunk_seq_id)
                         print("[CP2P, {}] Remote {} declares not ready for part {}".format(self.controller.local_addr,
-                                                                                        self.remote_addr, pkt.chunk_seq_id))
+                                                                                           self.remote_addr,
+                                                                                           pkt.chunk_seq_id))
                     tc.on_peer_respond_chunk_req(self.remote_addr, pkt.status == STATUS_OK, pkt.chunk_seq_id)
             self.notify_lock(req_type)
         else:
@@ -145,6 +146,13 @@ class P2PConn(Conn):
                 ack.data = bdata
                 self.send_packet(ack)
 
+    def __on_timeout__(self, itype: int, identifier: int, state: Any):
+        if itype == TYPE_REQUEST_CHUNK:
+            torrent_hash, block_seq = state
+            self.controller: controller.PeerController
+            if torrent_hash in self.controller.active_torrents:
+                self.controller.active_torrents[torrent_hash].on_chunk_timeout(self.remote_addr, block_seq)
+
     def last_active(self):
         """
         Return time passed after last communication
@@ -181,8 +189,8 @@ class P2PConn(Conn):
         req.packed_seq_ids = TorrentLocalState.pack_seq_ids(my_block)
         self.send_request(req, torrent_hash, False)
 
-    def async_request_chunk(self, torrent_hash: str, seq: int):
+    def async_request_chunk(self, torrent_hash: str, block_seq: int):
         req = RequestChunk()
         req.torrent_hash = hexstr_to_bytes(torrent_hash)
-        req.chunk_seq_id = seq
-        self.send_request(req, torrent_hash, False)
+        req.chunk_seq_id = block_seq
+        self.send_request(req, (torrent_hash, block_seq), False)
