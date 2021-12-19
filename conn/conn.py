@@ -17,6 +17,7 @@ EVTYPE_INCOMING_PACKET = 2
 
 ALIVE_INTERVAL = 60
 
+
 class Conn:
     """
     Manage a connection

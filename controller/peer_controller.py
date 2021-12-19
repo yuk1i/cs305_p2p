@@ -66,7 +66,7 @@ class PeerController(controller.Controller):
 
     def stop_torrent(self, torrent_hash: str):
         self.active_torrents[torrent_hash].close()
-        del self.active_torrents
+        del self.active_torrents[torrent_hash]
 
     def create_peer_conn(self, peer_addr: IPPort):
         if peer_addr not in self.peer_conns:
