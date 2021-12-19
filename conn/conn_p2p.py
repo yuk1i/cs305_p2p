@@ -39,6 +39,9 @@ class P2PConn(Conn):
                     tc.on_peer_chunk_updated(self.remote_addr, TorrentLocalState.unpack_seq_ids(pkt.packed_seq_ids))
             elif req_type == TYPE_REQUEST_CHUNK:
                 pkt: ACKRequestChunk
+                if not state:
+                    print("ERROR!!!!!! WHY state is None!!!!!!")
+                    state = ('1')
                 torrent_hash: str = state[0]
                 success = False
                 if torrent_hash in self.controller.active_torrents:
