@@ -45,19 +45,14 @@ class Conn:
     def __run__(self):
         while True:
             # Event Loop
-            try:
-                (ev_type, data) = self.__recv_queue__.get(block=True, timeout=1)
-                self.last_active = floor(time.time())
-                timeout = False
-            except queue.Empty as e:
-                timeout = True
-                # print(e)
-            if not timeout:
-                if ev_type == EVTYPE_END:
-                    break
-                if ev_type == EVTYPE_INCOMING_PACKET:
-                    # New Packet, Handle Packet Now
-                    self.__handler__(data)
+            (ev_type, data) = self.__recv_queue__.get(block=True)
+            self.last_active = floor(time.time())
+
+            if ev_type == EVTYPE_END:
+                break
+            if ev_type == EVTYPE_INCOMING_PACKET:
+                # New Packet, Handle Packet Now
+                self.__handler__(data)
 
     def __handler__(self, packet: BasePacket):
         pass
