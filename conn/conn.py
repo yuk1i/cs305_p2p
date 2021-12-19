@@ -35,7 +35,6 @@ class Conn:
         self.__recv_thread__.name = "Conn Recv Thread - Peer {}".format(self.remote_addr)
         self.__recv_thread__.start()
         self.waiter: Dict[int, threading.Condition] = dict()
-        self.last_active: int = floor(time.time())
         self.lock = threading.RLock()
         self.pending_packet: Dict[int, Tuple[int, int]] = dict()
         self.timeout_ms = timeout_ms
@@ -53,7 +52,6 @@ class Conn:
         while True:
             # Event Loop
             (ev_type, data) = self.__recv_queue__.get(block=True)
-            self.last_active = floor(time.time())
 
             if ev_type == EVTYPE_END:
                 break
@@ -127,10 +125,6 @@ class Conn:
                 self.waiter[itype].notify()
             # del self.waiter[itype]
             # Dont delete it
-
-    @property
-    def is_alive(self) -> bool:
-        return floor(time.time()) - self.last_active < ALIVE_INTERVAL
 
     def check_timeout(self):
         cur = current_time_ms()
