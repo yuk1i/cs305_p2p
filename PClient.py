@@ -24,6 +24,8 @@ class PClient:
         self.peerController.notify_tracker()
 
     def register(self, file_path: str) -> str:
+        if not os.path.exists(save_dir):
+            os.mkdir(save_dir)
         random_name = bytes_to_hexstr(random_bytes(32))
         t = Torrent.generate_torrent(file_path, random_name, 65450)
         t.__is_school_torrent__ = True
@@ -32,6 +34,8 @@ class PClient:
         return t.torrent_hash
 
     def download(self, fid) -> bytes:
+        if not os.path.exists(save_dir):
+            os.mkdir(save_dir)
         dummy_t = Torrent.create_dummy_torrent(fid)
         dummy_t.__is_school_torrent__ = True
         random_name = bytes_to_hexstr(random_bytes(16))
