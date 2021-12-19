@@ -31,7 +31,7 @@ class SocketManager:
             data = None
             src_addr: IPPort = None
             try:
-                (data, src_addr) = self.proxy.recvfrom(0.010)  # 10ms check
+                (data, src_addr) = self.proxy.recvfrom(0.500)  # 10ms check
             except TimeoutError:
                 pass
             if not data and not self.proxy.active:
