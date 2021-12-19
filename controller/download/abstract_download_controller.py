@@ -7,7 +7,6 @@ from utils import IPPort
 
 class AbstractDownloadController:
     def __init__(self, torrent_ctrl: controller.TorrentController):
-        self.peer_locks = threading.Lock()
         self.controller: controller.TorrentController = torrent_ctrl
         pass
 
