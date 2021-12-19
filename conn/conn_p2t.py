@@ -46,7 +46,8 @@ class PeerToTrackerConn(conn.Conn):
             self.notify_lock(req_type)
 
     def close(self):
-        pass
+        self.close_from_tracker()
+        super(PeerToTrackerConn, self).close()
         # self.active = False
         # super(PeerToTrackerConn).close()
 

@@ -44,5 +44,4 @@ class PClient:
         self.peerController.stop_torrent(fid)
 
     def close(self):
-        self.peerController.close_from_tracker()
         self.peerController.close()

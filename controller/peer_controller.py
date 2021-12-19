@@ -88,12 +88,11 @@ class PeerController(controller.Controller):
                 self.keep_alive_timer.join()
 
     def close(self):
+        self.tracker_conn.close()
         self.active = False
         if self.keep_alive_timer:
             self.keep_alive_timer.cancel()
         self.keep_alive_thread.join()
-        self.close_from_tracker()
-        self.tracker_conn.close()
         for con in self.peer_conns.values():
             con.close()
         self.socket.close()
