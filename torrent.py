@@ -165,14 +165,21 @@ class Torrent(MyDict):
         file_seq = SeqGenerator()
         block_seq = SeqGenerator()
         # recursively traverse directory
-        for dirpath, dirnames, filenames in path_utils.pathwalk(path):
-            relative = os.path.relpath(dirpath, path)
-            print("get relative path %s for path %s" % (relative, dirpath))
-            for file in filenames:
-                abs_dir = path_utils.pathjoin(dirpath, file)
-                fo = FileObject(file_seq.increment_and_get(), file, relative)
-                fo.calculate_blocks(abs_dir, tt.block_size, block_seq)
-                tt.files.append(fo)
+        if os.path.isdir(path):
+            for dirpath, dirnames, filenames in path_utils.pathwalk(path):
+                relative = os.path.relpath(dirpath, path)
+                print("get relative path %s for path %s" % (relative, dirpath))
+                for file in filenames:
+                    abs_dir = path_utils.pathjoin(dirpath, file)
+                    fo = FileObject(file_seq.increment_and_get(), file, relative)
+                    fo.calculate_blocks(abs_dir, tt.block_size, block_seq)
+                    tt.files.append(fo)
+        else:
+            # Single file
+            print("Generate Torrent file for the single file")
+            fo = FileObject(file_seq.increment_and_get(), os.path.basename(path), '.')
+            fo.calculate_blocks(path, tt.block_size, block_seq)
+            tt.files.append(fo)
         tt.generate_hash()
         return tt
 

@@ -97,7 +97,7 @@ class TorrentController:
         data = None
         pending_blocks: Set[int] = set()
         pending_peer: Dict[IPPort, Tuple[int, int]] = dict()
-        TIMEOUT = 5
+        TIMEOUT = 15
         while not self.dir_controller.download_completed:
             try:
                 (ev_type, data) = self.events.get(block=True, timeout=1)
@@ -112,9 +112,10 @@ class TorrentController:
                     pass
                 elif ev_type == EV_PEER_RESPOND:
                     peer_addr: IPPort = data
-                    _, req_chunk = pending_peer[peer_addr]
-                    del pending_peer[peer_addr]
-                    pending_blocks.remove(req_chunk)
+                    if peer_addr in pending_peer:
+                        _, req_chunk = pending_peer[peer_addr]
+                        del pending_peer[peer_addr]
+                        pending_blocks.remove(req_chunk)
             else:
                 pass
                 self.update_peers_chunks()

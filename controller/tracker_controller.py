@@ -54,6 +54,8 @@ class TrackerController(controller.Controller):
 
     def remove_peer(self, uuid):
         _, addr = self.get_peer(uuid=uuid)
+        if not addr:
+            return
         for con in self.conns:
             if con.remote_addr == addr:
                 con.close()

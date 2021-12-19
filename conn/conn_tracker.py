@@ -46,6 +46,7 @@ class TrackerConn(conn.Conn):
             ack = ACKClosePacket()
             ack.set_request(pkt)
             if self.controller.peer_exist(pkt.uuid):
+                print("[Tracker] Peer {} Closed".format(self.controller.get_peer(uuid=pkt.uuid)))
                 self.controller.remove_peer(pkt.uuid)
             ack.status = STATUS_OK
             self.send_packet(ack)
