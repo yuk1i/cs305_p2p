@@ -24,7 +24,7 @@ class TrackerController(controller.Controller):
         return con
 
     def peer_exist(self, uuid: int) -> bool:
-        return self.get_peer(uuid=uuid) is not None
+        return self.get_peer(uuid=uuid)[1] is not None
 
     def get_peer(self, uuid: int = -1, addr: IPPort = None) -> Tuple[int, IPPort]:
         """
@@ -36,7 +36,7 @@ class TrackerController(controller.Controller):
         for tp in self.peers:
             if tp[0] == uuid or tp[1] == addr:
                 return tp[0], tp[1]
-        return 0, None
+        return -1, None
 
     def new_peer(self, peer_addr: IPPort) -> int:
         """
@@ -45,7 +45,7 @@ class TrackerController(controller.Controller):
         :return: peer uuid
         """
         uuid, existing = self.get_peer(addr=peer_addr)
-        if uuid:
+        if uuid != -1:
             return uuid
         uuid = bytes_to_int(random_long())
         self.peers.append((uuid, peer_addr))
