@@ -1,6 +1,5 @@
 from __future__ import annotations
 
-import threading
 from typing import Tuple, Dict, Set, List
 
 import conn
@@ -9,17 +8,11 @@ from packet.p2t_packet import *
 from torrent import Torrent
 from utils.bytes_utils import int_to_ipv4, random_long, bytes_to_int, bytes_to_hexstr, ipv4_to_int, hexstr_to_bytes
 
-KEEP_ALIVE_INTERVAL = 25
 
 class PeerToTrackerConn(conn.Conn):
     def __init__(self, tracker_addr: IPPort, ctrl: controller.PeerController):
         super(PeerToTrackerConn, self).__init__(tracker_addr, ctrl)
-        self.active = True
-        self.keep_alive_timer: threading.Timer = None
-        self.keep_alive_thread: threading.Thread = threading.Thread(target=self.keep_alive)
-        self.keep_alive_thread.daemon = True
-        self.keep_alive_thread.start()
-
+        pass
 
     def __handler__(self, pkt: BasePacket):
         self.controller: controller.PeerController
@@ -51,13 +44,6 @@ class PeerToTrackerConn(conn.Conn):
             elif req_type == TYPE_CLOSE:
                 pass
             self.notify_lock(req_type)
-
-    def close(self):
-        self.active = False
-        self.keep_alive_timer.cancel()
-        self.keep_alive_thread.join()
-        super(PeerToTrackerConn).close()
-
 
     def notify(self, my_addr: IPPort):
         notify_req = NotifyPacket()
@@ -97,11 +83,3 @@ class PeerToTrackerConn(conn.Conn):
         req.uuid = self.controller.tracker_uuid
         self.send_request(req, None, True)
         self.wait(req.type)
-
-    def keep_alive(self):
-        while self.active:
-            self.keep_alive_timer = threading.Timer(interval=25, function=self.notify,
-                                                    args=(self.controller.local_addr,))
-            # self.keep_alive_timer.daemon = True
-            self.keep_alive_timer.start()
-            self.keep_alive_timer.join()

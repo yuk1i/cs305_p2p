@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import threading
 from typing import Tuple, Dict, List, Set
 
 import conn
@@ -13,6 +14,7 @@ from utils.bytes_utils import random_long, bytes_to_int
 class PeerController(controller.Controller):
     def __init__(self, pxy: proxy.Proxy, my_addr: IPPort, tracker_addr: IPPort):
         super(PeerController, self).__init__(pxy)
+        self.active = True
         self.local_addr = my_addr
         self.active_torrents: Dict[str, controller.TorrentController] = dict()
         self.peer_conns: Dict[IPPort, conn.P2PConn] = dict()
@@ -20,6 +22,10 @@ class PeerController(controller.Controller):
         self.tracker_conn: conn.PeerToTrackerConn = conn.PeerToTrackerConn(self.tracker_addr, self)
         self.tracker_status: int = controller.TrackerStatus.NOT_NOTIFIED
         self.tracker_uuid: int = 0
+        self.keep_alive_timer: threading.Timer = None
+        self.keep_alive_thread: threading.Thread = threading.Thread(target=self.keep_alive)
+        self.keep_alive_thread.daemon = True
+        self.keep_alive_thread.start()
 
     def accept_conn(self, src_addr: IPPort) -> conn.Conn:
         con = conn.P2PConn(src_addr, self)
@@ -72,7 +78,18 @@ class PeerController(controller.Controller):
         else:
             return None
 
+    def keep_alive(self):
+        while self.active:
+            self.keep_alive_timer = threading.Timer(interval=25, function=self.tracker_conn.notify,
+                                                    args=(self.local_addr,))
+            # self.keep_alive_timer.daemon = True
+            self.keep_alive_timer.start()
+            self.keep_alive_timer.join()
+
     def close(self):
+        self.active = False
+        self.keep_alive_timer.cancel()
+        self.keep_alive_thread.join()
         self.tracker_conn.close()
         for con in self.peer_conns.values():
             con.close()
