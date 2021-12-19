@@ -66,7 +66,7 @@ class FileObject(MyDict):
 
 
 class Torrent(MyDict):
-    def __init__(self):
+    def __init__(self, is_school_torrent: bool = False):
         super().__init__()
         self.name: str = ""
         self.torrent_hash: str = ""
@@ -77,6 +77,11 @@ class Torrent(MyDict):
         self.__dummy__ = False
         self.__bseq2bo__: Dict[int, BlockObject] = dict()
         self.__fseq2fo__: Dict[int, FileObject] = dict()
+        self.__is_school_torrent__ = is_school_torrent
+
+    @property
+    def is_school_torrent(self) -> bool:
+        return self.__is_school_torrent__
 
     @property
     def dummy(self):
@@ -225,3 +230,4 @@ class Torrent(MyDict):
         t.torrent_hash = torrent_hash
         t.__dummy__ = True
         return t
+

@@ -26,18 +26,18 @@ class PClient:
     def register(self, file_path: str) -> str:
         random_name = bytes_to_hexstr(random_bytes(32))
         t = Torrent.generate_torrent(file_path, random_name, 65450)
-        t.save_to_file(save_dir + random_name + ".torrent")
+        t.__is_school_torrent__ = True
         self.peerController.register_torrent(t, save_dir + random_name + ".torrent", os.path.dirname(file_path))
-        self.peerController.start_download(t.torrent_hash)
+        # self.peerController.start_download(t.torrent_hash)
         return t.torrent_hash
 
     def download(self, fid) -> bytes:
         dummy_t = Torrent.create_dummy_torrent(fid)
+        dummy_t.__is_school_torrent__ = True
         random_name = bytes_to_hexstr(random_bytes(16))
         self.peerController.register_torrent(dummy_t, save_dir + random_name + ".torrent", save_dir + random_name)
         self.peerController.start_download(dummy_t.torrent_hash)
         self.peerController.active_torrents[fid].wait_downloaded()
-        self.peerController.active_torrents[fid].dir_controller.flush_all()
         return self.peerController.active_torrents[fid].dir_controller.get_tested_binary()
 
     def cancel(self, fid):

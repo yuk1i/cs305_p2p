@@ -41,7 +41,10 @@ class TorrentController:
         self.thread = threading.Thread(target=self.__run__)
         self.events = queue.Queue()
         self.torrent_binary = bytearray()
-        self.dir_controller = controller.DirectoryController(torrent, torrent_file_path, save_dir)
+        if self.torrent.is_school_torrent:
+            self.dir_controller = controller.DummyDirectoryController(torrent, save_dir)
+        else:
+            self.dir_controller = controller.DirectoryController(torrent, torrent_file_path, save_dir)
         if not self.torrent.dummy:
             self.dir_controller.check_all_hash()
         self.upload_mode = MODE_FULL
@@ -88,8 +91,7 @@ class TorrentController:
             except Exception as e:
                 print("[TC] Errored when trying to decode torrent from binary")
         print("[TC] Successfully obtain torrent file, size: %s" % (len(self.torrent.__json_str__)))
-        self.dir_controller.update()
-        self.dir_controller.build_torrent_directory_structure()
+        self.dir_controller.on_torrent_filled()
         self.update_peers_chunks()
         # Start polling
         self.status = controller.TorrentStatus.TORRENT_STATUS_DOWNLOADING
@@ -98,7 +100,7 @@ class TorrentController:
         pending_blocks: Set[int] = set()
         pending_peer: Dict[IPPort, Tuple[int, int]] = dict()
         TIMEOUT = 15
-        while not self.dir_controller.download_completed:
+        while not self.dir_controller.is_download_completed():
             try:
                 (ev_type, data) = self.events.get(block=True, timeout=1)
                 timeout = False
@@ -120,15 +122,15 @@ class TorrentController:
                 pass
                 self.update_peers_chunks()
             wanted = set(range(1, 1 + self.dir_controller.torrent_block_count)).difference(
-                self.dir_controller.local_state.local_block)
+                self.dir_controller.get_local_blocks())
             print("[T2C,{}] wanted for {},\n\t\thave {}".format(self.controller.local_addr, wanted,
-                                                                self.dir_controller.local_state.local_block))
+                                                                self.dir_controller.get_local_blocks()))
             # TODO: check timeouts
             available_peers = list(set(self.peer_list).difference(pending_peer.keys()))
             random.shuffle(available_peers)
             for peer in available_peers:
                 diff = self.peer_chunk_info[peer].chunks.difference(
-                    self.dir_controller.local_state.local_block)
+                    self.dir_controller.get_local_blocks())
                 want_chunks = diff.difference(pending_blocks)
                 if len(want_chunks) == 0:
                     # TODO: pass
@@ -169,7 +171,7 @@ class TorrentController:
         :return:
         """
         # Update Chunk Info
-        my_block = self.dir_controller.local_state.local_block.copy()
+        my_block = self.dir_controller.get_local_blocks().copy()
         for peer_addr in self.peer_list:
             if self.peer_chunk_info[peer_addr].should_update():
                 self.peer_chunk_info[peer_addr].mark_pending()

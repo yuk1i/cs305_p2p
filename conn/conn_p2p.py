@@ -108,7 +108,7 @@ class P2PConn(Conn):
                     self.send_packet(ack)
                     return
                 ack.status = STATUS_OK
-                my_set = tc.dir_controller.local_state.local_block
+                my_set = tc.dir_controller.get_local_blocks()
                 if tc.upload_mode == controller.MODE_DONT_REPEAT:
                     my_set = my_set.difference(tc.uploaded)
                 ack.packed_seq_ids = TorrentLocalState.pack_seq_ids(my_set)

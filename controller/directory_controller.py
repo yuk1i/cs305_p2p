@@ -8,6 +8,7 @@ from torrent_local_state import TorrentLocalState
 import os
 import pickle
 import threading
+from .abstract_dir_controller import AbstractDirectoryController
 
 from utils import hash_utils
 from utils.path_utils import *
@@ -21,14 +22,14 @@ from typing import Dict, Set, List, BinaryIO
 FILE_POSTFIX = '.ls'
 
 
-class DirectoryController:
+class DirectoryController(AbstractDirectoryController):
     """
     Extract and store all information about files in the torrent *locally* in this class
     """
 
     def __init__(self, torrent: Torrent, torrent_file_path: str, save_dir: str = '.'):
+        super().__init__(torrent)
         self._active = True
-        self.torrent = torrent
         self.save_dir = save_dir
         self.torrent_block_count: int = 0
         self.fseq2file: Dict[int, FileObject] = {}
@@ -57,6 +58,16 @@ class DirectoryController:
         # self.auto_save_thread: threading.Thread = threading.Thread(target=self._auto_save_local_state)
         # self.auto_save_thread.daemon = True
         # self.auto_save_thread.start()
+
+    def get_local_blocks(self) -> Set[int]:
+        return self.local_state.local_block
+
+    def is_download_completed(self) -> bool:
+        return len(self.local_state.local_block) == self.torrent_block_count
+
+    def on_torrent_filled(self):
+        self.update()
+        self.build_torrent_directory_structure()
 
     def update(self):
         self.torrent_block_count = 0
@@ -157,10 +168,6 @@ class DirectoryController:
             self._update_local_state(block_seq)
         return True
 
-    @property
-    def download_completed(self):
-        return len(self.local_state.local_block) == self.torrent_block_count
-
     def _init_local_state(self):
         with open(self.local_state_path, 'rb') as fp:
             return pickle.load(fp)
@@ -228,6 +235,8 @@ class DirectoryController:
 
     def get_tested_binary(self):
         # This function should only be used to work with School tests: one file, return binary direct
-        with self.write_lock:
-            self.opened_files[1].seek(0)
-            return self.opened_files[1].read()
+        # with self.write_lock:
+        #     self.opened_files[1].seek(0)
+        #     return self.opened_files[1].read()\
+        # Use DummyDirController to pass school tests
+        raise NotImplementedError("Use DummyDirController to pass school tests")
