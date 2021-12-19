@@ -7,6 +7,7 @@ import threading
 import queue
 
 import controller
+from .connection_status import ConnectionStatus
 from packet.base_packet import BasePacket
 from utils import IPPort
 from utils.bytes_utils import random_short, bytes_to_int
@@ -23,6 +24,7 @@ class Conn:
 
     def __init__(self, remote_addr: IPPort, ctrl: controller.Controller):
         self.remote_addr: IPPort = remote_addr
+        self.connectionStatus: ConnectionStatus = ConnectionStatus()
         self.controller: controller.Controller = ctrl
         self.__request_data__: Dict[int, Any] = dict()
         # __request_data__ is used to save status between send and recv
@@ -60,9 +62,11 @@ class Conn:
     def recv_packet(self, packet: BasePacket):
         event = (EVTYPE_INCOMING_PACKET, packet)
         self.__recv_queue__.put_nowait(event)
+        self.connectionStatus.feed_downlink(packet)
 
     def send_packet(self, packet: BasePacket):
         self.controller.socket.send_packet(packet, self.remote_addr)
+        self.connectionStatus.feed_uplink(packet)
 
     def new_identifier(self) -> int:
         ident = bytes_to_int(random_short())
