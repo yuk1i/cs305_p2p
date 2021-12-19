@@ -80,16 +80,19 @@ class PeerController(controller.Controller):
 
     def keep_alive(self):
         while self.active:
-            self.keep_alive_timer = threading.Timer(interval=25, function=self.tracker_conn.notify,
-                                                    args=(self.local_addr,))
-            # self.keep_alive_timer.daemon = True
-            self.keep_alive_timer.start()
-            self.keep_alive_timer.join()
+            while self.tracker_status == controller.TrackerStatus.NOTIFIED:
+                self.keep_alive_timer = threading.Timer(interval=25, function=self.tracker_conn.notify,
+                                                        args=(self.local_addr,))
+                # self.keep_alive_timer.daemon = True
+                self.keep_alive_timer.start()
+                self.keep_alive_timer.join()
 
     def close(self):
         self.active = False
-        self.keep_alive_timer.cancel()
+        if self.keep_alive_timer:
+            self.keep_alive_timer.cancel()
         self.keep_alive_thread.join()
+        self.close_from_tracker()
         self.tracker_conn.close()
         for con in self.peer_conns.values():
             con.close()

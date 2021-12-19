@@ -42,7 +42,7 @@ class PeerToTrackerConn(conn.Conn):
                     self.controller.active_torrents[
                         torrent_hash].status = controller.TorrentStatus.TORRENT_STATUS_CANCELED
             elif req_type == TYPE_CLOSE:
-                pass
+                self.controller.tracker_status = controller.TrackerStatus.NOT_NOTIFIED
             self.notify_lock(req_type)
 
     def close(self):
