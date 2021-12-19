@@ -28,18 +28,26 @@ class SocketManager:
 
     def __run__(self):
         while True:
-            (data, src_addr) = self.proxy.recvfrom()
+            data = None
+            src_addr: IPPort = None
+            try:
+                (data, src_addr) = self.proxy.recvfrom(0.010)  # 10ms check
+            except TimeoutError:
+                pass
             if not data and not self.proxy.active:
                 print("Socket Manager exited")
                 return
-            if src_addr not in self.mapper.keys():
-                peer = self.mapper[src_addr] = self.controller.accept_conn(src_addr)
-                if not peer:
-                    print("[Socket] Reject Connection From %s:%s" % src_addr)
-                    return
-            self.mapper[src_addr].connectionStatus.feed_downlink(len(data))
-            pkt = packet.deserializer.deserialize_packet(data)
-            self.on_pkt_recv(src_addr, pkt)
+            if data and src_addr:
+                if src_addr not in self.mapper.keys():
+                    peer = self.mapper[src_addr] = self.controller.accept_conn(src_addr)
+                    if not peer:
+                        print(f"[Socket] Reject Connection From {src_addr}")
+                        continue
+                self.mapper[src_addr].connectionStatus.feed_downlink(len(data))
+                pkt = packet.deserializer.deserialize_packet(data)
+                self.on_pkt_recv(src_addr, pkt)
+            for con in self.mapper.values():
+                con.check_timeout()
 
     def send_packet(self, pkt: BasePacket, dst_addr: IPPort):
         peer: conn.Conn = self.mapper[dst_addr]

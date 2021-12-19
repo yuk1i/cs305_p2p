@@ -2,7 +2,7 @@ from __future__ import annotations
 
 import time
 from math import floor
-from typing import Tuple, Dict, Any
+from typing import Tuple, Dict, Any, Set
 import threading
 import queue
 
@@ -10,7 +10,7 @@ import controller
 from .connection_status import ConnectionStatus
 from packet.base_packet import BasePacket
 from utils import IPPort
-from utils.bytes_utils import random_short, bytes_to_int
+from utils.bytes_utils import random_short, bytes_to_int, current_time_ms
 
 EVTYPE_END = 1
 EVTYPE_INCOMING_PACKET = 2
@@ -23,11 +23,11 @@ class Conn:
     Manage a connection
     """
 
-    def __init__(self, remote_addr: IPPort, ctrl: controller.Controller):
+    def __init__(self, remote_addr: IPPort, ctrl: controller.Controller, timeout_ms=5000):
         self.remote_addr: IPPort = remote_addr
         self.connectionStatus: ConnectionStatus = ConnectionStatus()
         self.controller: controller.Controller = ctrl
-        self.__request_data__: Dict[int, Any] = dict()
+        self.saved_states: Dict[int, Any] = dict()
         # __request_data__ is used to save status between send and recv
         self.controller.socket.register(remote_addr, self)
         self.__recv_queue__ = queue.Queue()
@@ -36,6 +36,10 @@ class Conn:
         self.__recv_thread__.start()
         self.waiter: Dict[int, threading.Condition] = dict()
         self.last_active: int = floor(time.time())
+        self.lock = threading.RLock()
+        self.pending_packet: Dict[int, Tuple[int, int]] = dict()
+        self.timeout_ms = timeout_ms
+        # Pending packets, key: identifier, value: (itype, send_time) in ms
         pass
 
     def close(self):
@@ -60,28 +64,42 @@ class Conn:
     def __handler__(self, packet: BasePacket):
         pass
 
+    def __on_timeout__(self, itype: int, identifier: int, state: Any):
+        pass
+
     def recv_packet(self, packet: BasePacket):
+        with self.lock:
+            if packet.identifier not in self.pending_packet:
+                print("[Conn] Recv timeouted packet")
+                # dropped packet
+            else:
+                del self.pending_packet[packet.identifier]
         event = (EVTYPE_INCOMING_PACKET, packet)
         self.__recv_queue__.put_nowait(event)
 
     def send_packet(self, packet: BasePacket):
         self.controller.socket.send_packet(packet, self.remote_addr)
+        with self.lock:
+            self.pending_packet[packet.identifier] = (packet.type, current_time_ms())
 
     def new_identifier(self) -> int:
         ident = bytes_to_int(random_short())
-        while ident in self.__request_data__.keys():
-            ident = bytes_to_int(random_short())
+        with self.lock:
+            while ident in self.saved_states.keys():
+                ident = bytes_to_int(random_short())
         return ident
 
     def put_state(self, identifier: int, state: Any):
-        self.__request_data__[identifier] = state
+        with self.lock:
+            self.saved_states[identifier] = state
 
     def retrieve_state(self, identifier: int) -> Any:
-        if identifier not in self.__request_data__.keys():
-            return None
-        data = self.__request_data__[identifier]
-        del self.__request_data__[identifier]
-        return data
+        with self.lock:
+            if identifier not in self.saved_states.keys():
+                return None
+            data = self.saved_states[identifier]
+            del self.saved_states[identifier]
+            return data
 
     def send_request(self, packet: BasePacket, state: Any, waiter: bool = False) -> int:
         packet.identifier = self.new_identifier()
@@ -93,12 +111,12 @@ class Conn:
         return packet.identifier
 
     def wait(self, itype: int, timeout: int = None) -> bool:
-        '''
+        """
         Wait for a response
         :param itype: packet type
         :param timeout: timeout in second
         :return: True if Succeed, False if timeout
-        '''
+        """
         if itype in self.waiter:
             with self.waiter[itype]:
                 return self.waiter[itype].wait(timeout)
@@ -113,3 +131,12 @@ class Conn:
     @property
     def is_alive(self) -> bool:
         return floor(time.time()) - self.last_active < ALIVE_INTERVAL
+
+    def check_timeout(self):
+        cur = current_time_ms()
+        for identi in list(self.pending_packet.keys()):
+            itype, send_time = self.pending_packet[identi]
+            if cur - send_time >= self.timeout_ms:
+                state = self.saved_states[identi] if identi in self.saved_states else None
+                self.__on_timeout__(itype, identi, state)
+                del self.pending_packet[identi]
