@@ -56,11 +56,6 @@ class PeerController(controller.Controller):
         self.tracker_conn.cancel(torrent_hash)
         del self.active_torrents[torrent_hash]
 
-    def close_from_tracker(self):
-        for active in self.active_torrents.values():
-            active.close()
-        self.tracker_conn.close_from_tracker()
-
     def start_download(self, torrent_hash: str):
         self.active_torrents[torrent_hash].start_download()
 
@@ -88,6 +83,8 @@ class PeerController(controller.Controller):
                 self.keep_alive_timer.join()
 
     def close(self):
+        for active in self.active_torrents.values():
+            active.close()
         self.tracker_conn.close()
         self.active = False
         if self.keep_alive_timer:
