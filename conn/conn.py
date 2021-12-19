@@ -1,5 +1,7 @@
 from __future__ import annotations
 
+import time
+from math import floor
 from typing import Tuple, Dict, Any
 import threading
 import queue
@@ -12,6 +14,7 @@ from utils.bytes_utils import random_short, bytes_to_int
 EVTYPE_END = 1
 EVTYPE_INCOMING_PACKET = 2
 
+ALIVE_INTERVAL = 60
 
 class Conn:
     """
@@ -29,6 +32,7 @@ class Conn:
         self.__recv_thread__.name = "Conn Recv Thread - Peer {}".format(self.remote_addr)
         self.__recv_thread__.start()
         self.waiter: Dict[int, threading.Condition] = dict()
+        self.last_active: int = floor(time.time())
         pass
 
     def close(self):
@@ -41,13 +45,19 @@ class Conn:
     def __run__(self):
         while True:
             # Event Loop
-            (ev_type, data) = self.__recv_queue__.get(block=True)
-            if ev_type == EVTYPE_END:
-                break
-
-            if ev_type == EVTYPE_INCOMING_PACKET:
-                # New Packet, Handle Packet Now
-                self.__handler__(data)
+            try:
+                (ev_type, data) = self.__recv_queue__.get(block=True, timeout=1)
+                self.last_active = floor(time.time())
+                timeout = False
+            except queue.Empty as e:
+                timeout = True
+                # print(e)
+            if not timeout:
+                if ev_type == EVTYPE_END:
+                    break
+                if ev_type == EVTYPE_INCOMING_PACKET:
+                    # New Packet, Handle Packet Now
+                    self.__handler__(data)
 
     def __handler__(self, packet: BasePacket):
         pass
@@ -101,3 +111,7 @@ class Conn:
                 self.waiter[itype].notify()
             # del self.waiter[itype]
             # Dont delete it
+
+    @property
+    def is_alive(self) -> bool:
+        return floor(time.time()) - self.last_active < ALIVE_INTERVAL
