@@ -39,7 +39,8 @@ class SocketManager:
                 return
             if data and src_addr:
                 if src_addr not in self.mapper.keys():
-                    peer = self.mapper[src_addr] = self.controller.accept_conn(src_addr)
+                    peer = self.controller.accept_conn(src_addr)
+                    self.mapper[src_addr] = peer
                     if not peer:
                         print(f"[Socket] Reject Connection From {src_addr}")
                         continue
