@@ -29,9 +29,11 @@ class ReAssembler:
     def assemble(self, pkt: BasePacket) -> bool:
         """
         Reassemble a packet, return whether Reassembling is done
+        :param pkt:
         :param packet:
         :return:
         """
+        print(f"assembling packet {pkt.type}")
         start = bytes_to_int(pkt.__data__[4:8])
         length = bytes_to_int(pkt.__data__[8:12])
         total_length = bytes_to_int(pkt.__data__[12:16])
@@ -78,11 +80,19 @@ class Assembler:
     def boxing(self) -> List[bytes]:
         # if self.type == TYPE_ACK and self.rev == TYPE_REQUEST_PEERS:
 
-        raw = copy.deepcopy(self.raw_data)
         ret: List[bytes] = list()
         max_p = self.mtu - 16
         cnt: int = 0
         total_bytes: int = len(self.raw_data)
+        if total_bytes < max_p:
+            bf = bytearray()
+            wf = ByteWriter(bf)
+            wf.write_byte(self.header[0])
+            wf.write_byte(self.header[1] & (0xFF - FLAG_REASSEMBLE))
+            wf.write_bytes(self.header[2:4])
+            wf.write_bytes(self.raw_data)
+            return [bf]
+        raw = self.raw_data.copy()
         while len(raw) > 0:
             packed_data = raw[:max_p]
             raw = raw[max_p:]

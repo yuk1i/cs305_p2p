@@ -105,7 +105,7 @@ class TorrentController:
         # TIMEOUT = 15
         while not self.dir_controller.is_download_completed():
             try:
-                (ev_type, data) = self.events.get(block=True, timeout=0.5)
+                (ev_type, data) = self.events.get(block=True, timeout=0.05)
                 timeout = False
             except queue.Empty:
                 timeout = True

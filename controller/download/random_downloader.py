@@ -1,4 +1,5 @@
 import random
+import threading
 from typing import List, Dict, Set, Tuple
 
 import controller
@@ -12,7 +13,14 @@ class RandomDownloadController(AbstractDownloadController):
         self.pending_blocks: Set[int] = set()
         self.pending_peer: Dict[IPPort, Set[int]] = dict()
         self.timeouting_blocks: Dict[int, int] = dict()
-        self.MAX_SIMULTANEOUS_REQ = 1
+        self.MAX_SIMULTANEOUS_REQ = 3
+        self.peer_sim_numbers: Dict[IPPort, int] = dict()
+        self.peer_sim_numbers_reseter = threading.Timer(10, function=self.reseter)
+        self.peer_sim_numbers_reseter.start()
+
+    def reseter(self):
+        for p in self.peer_list:
+            self.peer_sim_numbers[p] = self.MAX_SIMULTANEOUS_REQ
 
     def on_peer_respond_succeed(self, peer_addr: IPPort, chunk_seq_id: int):
         print(f"[ALG] block {chunk_seq_id} success from {peer_addr}")
@@ -36,6 +44,7 @@ class RandomDownloadController(AbstractDownloadController):
 
     def on_peer_timeout(self, peer_addr: IPPort, chunk_seq_id: int):
         print(f"[ALG] block {chunk_seq_id} timeout from {peer_addr}")
+        self.peer_sim_numbers[peer_addr] = self.MAX_SIMULTANEOUS_REQ - 1
         self.on_peer_respond_failed(peer_addr, chunk_seq_id)
         # self.pending_peer[peer_addr].remove(chunk_seq_id)
         # self.timeouting_blocks[chunk_seq_id] = current_time_ms()
@@ -52,7 +61,9 @@ class RandomDownloadController(AbstractDownloadController):
         for peer in peers:
             if peer not in self.pending_peer:
                 self.on_new_peer(peer)
-            if len(self.pending_peer[peer]) >= self.MAX_SIMULTANEOUS_REQ:
+            if peer not in self.peer_sim_numbers:
+                self.peer_sim_numbers[peer] = self.MAX_SIMULTANEOUS_REQ
+            if len(self.pending_peer[peer]) >= self.peer_sim_numbers[peer]:
                 continue
             want_chunks = wanted.intersection(self.peer_chunk_info[peer].chunks).difference(self.pending_blocks)
             if len(want_chunks) == 0:
@@ -74,3 +85,7 @@ class RandomDownloadController(AbstractDownloadController):
 
     def on_new_peer(self, peer_addr: IPPort):
         self.pending_peer[peer_addr] = set()
+        self.peer_sim_numbers[peer_addr] = self.MAX_SIMULTANEOUS_REQ
+
+    def close(self):
+        self.peer_sim_numbers_reseter.cancel()

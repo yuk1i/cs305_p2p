@@ -36,3 +36,6 @@ class AbstractDownloadController:
 
     def on_new_peer(self, peer_addr: IPPort):
         pass
+
+    def close(self):
+        pass

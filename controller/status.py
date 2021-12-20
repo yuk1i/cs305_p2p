@@ -1,3 +1,4 @@
+import random
 import time
 from typing import Set
 
@@ -30,7 +31,7 @@ class RemoteChunkInfo:
 
     def update(self, chunk_info: Set[int]):
         self.chunks.update(chunk_info)
-        self.last_update = utils.bytes_utils.current_time_ms()
+        self.last_update = utils.bytes_utils.current_time_ms() + random.randint(0, 1000)
         self.pending = False
 
     def remove(self, element):
