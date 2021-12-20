@@ -11,6 +11,7 @@ import packet.deserializer
 import conn
 import proxy
 from packet.base_packet import BasePacket, FLAG_REASSEMBLE, MASK_REVERSED
+from .traffic_monitor import SockManTrafficMonitor
 
 from utils import bytes_utils, IPPort
 
@@ -20,6 +21,7 @@ class SocketManager:
         self.proxy = pxy
         self.controller = ctrl
         self.mapper: Dict[IPPort, conn.Conn] = dict()
+        self.traffic_monitor: SockManTrafficMonitor = SockManTrafficMonitor()
         self.mtu = 1460
         # self.peers: List[ConnManager] = list()
         self.reassemblers: Dict[int, conn.ReAssembler] = dict()
@@ -44,25 +46,24 @@ class SocketManager:
                     if not peer:
                         print(f"[Socket] Reject Connection From {src_addr}")
                         continue
-                self.mapper[src_addr].connectionStatus.feed_downlink(len(data))
+                self.traffic_monitor.hook_downlink(len(data), src_addr)
                 pkt = packet.deserializer.deserialize_packet(data)
                 self.on_pkt_recv(src_addr, pkt)
             for con in self.mapper.values():
                 con.check_timeout()
 
     def send_packet(self, pkt: BasePacket, dst_addr: IPPort):
-        peer: conn.Conn = self.mapper[dst_addr]
         if pkt.reassemble.enabled:
             pkts = conn.Assembler(pkt, self.mtu).boxing()
             total_size = 0
             for pdata in pkts:
                 self.proxy.sendto(pdata, dst_addr)
                 total_size += len(pdata)
-            peer.connectionStatus.feed_uplink(total_size)
+            self.traffic_monitor.hook_uplink(total_size, dst_addr)
         else:
             data = pkt.pack()
             self.proxy.sendto(data, dst_addr)
-            peer.connectionStatus.feed_uplink(len(data))
+            self.traffic_monitor.hook_uplink(len(data), dst_addr)
             # non blocking
 
     def register(self, addr: IPPort, con: conn.Conn):

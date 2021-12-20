@@ -1,8 +1,10 @@
-import time
+import warnings
 from collections import namedtuple
 from math import floor
 from typing import List
 
+from utils import IPPort
+from .socket_manager import SocketManager
 from utils.bytes_utils import current_time_ms
 
 SPEED_MONITOR_TIME = 5
@@ -11,7 +13,7 @@ SPEED_MONITOR_TIME = 5
 OneContrib = namedtuple('OneContrib', ['size', 'time'])
 
 
-class ConnectionStatus:
+class _BaseTrafficMonitor:
 
     def __init__(self):
         self.start_time = current_time_ms()
@@ -62,3 +64,34 @@ class ConnectionStatus:
         if valid_index:
             self._uplink_list = self._uplink_list[valid_index:]
 
+
+class SockManTrafficMonitor(_BaseTrafficMonitor):
+
+    def __init__(self, sockman: SocketManager):
+        super(SockManTrafficMonitor, self).__init__()
+        self.sockman = sockman
+
+    def hook_uplink(self, packet_size: int, remote_addr: IPPort):
+        super(SockManTrafficMonitor, self).feed_uplink(packet_size)
+        self.sockman.mapper[remote_addr].traffic_monitor.feed_uplink(packet_size)
+
+    def hook_downlink(self, packet_size: int, remote_addr: IPPort):
+        super(SockManTrafficMonitor, self).feed_downlink(packet_size)
+        self.sockman.mapper[remote_addr].traffic_monitor.feed_downlink(packet_size)
+
+    def feed_uplink(self, packet_size: int):
+        """
+        don't use this
+        """
+        warnings.warn("don't use SockManTrafficMonitor.feed_uplink, this method has been override to do nothing.")
+
+    def feed_downlink(self, packet_size: int):
+        """
+        don't use this
+        """
+        warnings.warn("don't use SockManTrafficMonitor.feed_downlink, this method has been override to do nothing.")
+
+
+class ConnectionTrafficMonitor(_BaseTrafficMonitor):
+
+    pass
