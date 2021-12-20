@@ -28,8 +28,7 @@ class Conn:
         self.connectionStatus: ConnectionStatus = ConnectionStatus()
         self.controller: controller.Controller = ctrl
         self.saved_states: Dict[int, Any] = dict()
-        # __request_data__ is used to save status between send and recv
-        self.controller.socket.register(remote_addr, self)
+        # saved_states is used to save status between send and recv
         self.__recv_queue__ = queue.Queue()
         self.__recv_thread__ = threading.Thread(target=self.__run__)
         self.__recv_thread__.name = "Conn Recv Thread - Peer {}".format(self.remote_addr)
@@ -39,6 +38,7 @@ class Conn:
         self.pending_packet: Dict[int, Tuple[int, int]] = dict()
         self.timeout_ms = timeout_ms
         # Pending packets, key: identifier, value: (itype, send_time) in ms
+        self.controller.socket.register(remote_addr, self)
         pass
 
     def close(self):
