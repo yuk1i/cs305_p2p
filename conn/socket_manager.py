@@ -21,7 +21,7 @@ class SocketManager:
         self.proxy = pxy
         self.controller = ctrl
         self.mapper: Dict[IPPort, conn.Conn] = dict()
-        self.traffic_monitor: SockManTrafficMonitor = SockManTrafficMonitor()
+        self.traffic_monitor: SockManTrafficMonitor = SockManTrafficMonitor(self)
         self.mtu = 1460
         # self.peers: List[ConnManager] = list()
         self.reassemblers: Dict[int, conn.ReAssembler] = dict()

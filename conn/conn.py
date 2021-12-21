@@ -9,6 +9,7 @@ import queue
 import controller
 from .traffic_monitor import ConnectionTrafficMonitor
 from packet.base_packet import BasePacket, TYPE_ACK
+
 from utils import IPPort
 from utils.bytes_utils import random_short, bytes_to_int, current_time_ms
 

@@ -1,10 +1,13 @@
+from __future__ import annotations
+
 import warnings
 from collections import namedtuple
 from math import floor
 from typing import List
 
 from utils import IPPort
-from .socket_manager import SocketManager
+# from .socket_manager import SocketManager
+# import socket_manager
 from utils.bytes_utils import current_time_ms
 
 SPEED_MONITOR_TIME = 5
@@ -67,7 +70,7 @@ class _BaseTrafficMonitor:
 
 class SockManTrafficMonitor(_BaseTrafficMonitor):
 
-    def __init__(self, sockman: SocketManager):
+    def __init__(self, sockman):
         super(SockManTrafficMonitor, self).__init__()
         self.sockman = sockman
 
