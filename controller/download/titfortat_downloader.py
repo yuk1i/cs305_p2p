@@ -60,10 +60,9 @@ class TitfortatDownloadController(AbstractDownloadController):
         return elem[1]
 
     def __set_choking_status(self, peer: IPPort, status: bool):
+        print("peer ", peer, " choking status to ", status)
         conn: P2PConn = self.controller.controller.get_peer_conn(peer)
-        pkt: SetChokeStatus = SetChokeStatus()
-        pkt.choke_status = status
-        conn.send_packet(pkt)
+        conn.notify_choke_status(status)
 
     def evaluate(self):
         peers = list(self.peer_list)

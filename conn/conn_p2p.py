@@ -203,3 +203,8 @@ class P2PConn(Conn):
         req.torrent_hash = hexstr_to_bytes(torrent_hash)
         req.chunk_seq_id = block_seq
         self.send_request(req, (torrent_hash, block_seq), False)
+
+    def notify_choke_status(self, status: bool):
+        pkt: SetChokeStatus = SetChokeStatus()
+        pkt.choke_status = status
+        self.send_packet(pkt)
