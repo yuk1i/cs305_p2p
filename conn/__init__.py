@@ -5,4 +5,5 @@ from .conn_p2t import PeerToTrackerConn
 from .socket_manager import SocketManager
 from .reassemble import ReAssembler, Assembler
 
-__all__ = ['Conn', 'P2PConn', 'TrackerConn', 'PeerToTrackerConn', 'SocketManager', 'ReAssembler', 'Assembler', 'connection_status']
+__all__ = ['Conn', 'P2PConn', 'TrackerConn', 'PeerToTrackerConn', 'SocketManager', 'ReAssembler', 'Assembler',
+           'traffic_monitor']
