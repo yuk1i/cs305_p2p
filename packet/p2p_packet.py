@@ -123,3 +123,14 @@ class ACKRequestChunk(ACKPacket):
         self.status = r.read_int()
         self.chunk_seq_id = r.read_int()
         self.data = r.read_bytes(r.remain())
+
+class SetChokeStatus(BasePacket):
+    def __init__(self):
+        super(SetChokeStatus, self).__init__(TYPE_SET_CHOKE_STATUS);
+        self.choke_status: bool = False
+
+    def __pack_internal__(self, w: ByteWriter):
+        w.write_bytes(self.choke_status)
+
+    def __unpack_internal__(self, r: ByteReader):
+        self.choke_status = r.read_bytes()

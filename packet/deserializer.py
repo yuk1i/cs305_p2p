@@ -38,6 +38,8 @@ def get_packet_by_type(itype: int, reserved: int = 0) -> BasePacket:
         return RequestChunk()
     if itype == TYPE_UPDATE_CHUNK_INFO:
         return UpdateChunkInfo()
+    if itype == TYPE_SET_CHOKE_STATUS:
+        return SetChokeStatus()
 
 
 def deserialize_packet(data: bytes) -> BasePacket:
