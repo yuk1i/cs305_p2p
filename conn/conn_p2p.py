@@ -16,6 +16,7 @@ class P2PConn(Conn):
 
     def __init__(self, peer_addr: IPPort, ctrl: controller.PeerController):
         super(P2PConn, self).__init__(peer_addr, ctrl)
+        self.choke_status = False
 
     def __handler__(self, pkt: BasePacket):
         self.controller: controller.PeerController
@@ -150,6 +151,9 @@ class P2PConn(Conn):
                 ack.status = STATUS_OK
                 ack.data = bdata
                 self.send_packet(ack)
+            elif req_type == TYPE_SET_CHOKE_STATUS:
+                pkt: SetChokeStatus
+                self.choke_status = pkt.choke_status
 
     def __on_timeout__(self, itype: int, identifier: int, state: Any):
         if itype == TYPE_REQUEST_CHUNK:
