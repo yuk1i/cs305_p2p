@@ -16,7 +16,6 @@ class P2PConn(Conn):
 
     def __init__(self, peer_addr: IPPort, ctrl: controller.PeerController):
         super(P2PConn, self).__init__(peer_addr, ctrl)
-        self.choke_status = False
 
     def __handler__(self, pkt: BasePacket):
         self.controller: controller.PeerController
@@ -153,7 +152,9 @@ class P2PConn(Conn):
                 self.send_packet(ack)
             elif req_type == TYPE_SET_CHOKE_STATUS:
                 pkt: SetChokeStatus
-                self.choke_status = pkt.choke_status
+                str_hash = bytes_to_hexstr(pkt.torrent_hash)
+                tc: controller.TorrentController = self.controller.active_torrents[str_hash]
+                tc.on_peer_choke_status_change(self.remote_addr, pkt.choke_status)
 
     def __on_timeout__(self, itype: int, identifier: int, state: Any):
         if itype == TYPE_REQUEST_CHUNK:
@@ -204,7 +205,8 @@ class P2PConn(Conn):
         req.chunk_seq_id = block_seq
         self.send_request(req, (torrent_hash, block_seq), False)
 
-    def notify_choke_status(self, status: bool):
+    def notify_choke_status(self, torrent_hash: str, status: bool):
         pkt: SetChokeStatus = SetChokeStatus()
+        pkt.torrent_hash = hexstr_to_bytes(torrent_hash)
         pkt.choke_status = status
         self.send_packet(pkt)

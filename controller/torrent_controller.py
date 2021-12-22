@@ -16,6 +16,7 @@ EV_QUIT = 0
 EV_PEER_CHUNK_INFO_UPDATED = 1
 EV_PEER_RESPOND = 2
 EV_CHUNK_TIMEOUT = 3
+EV_CHOKE_STATUS_CHANGE = 4
 
 MODE_DONT_REPEAT = 1
 MODE_FULL = 0
@@ -124,6 +125,9 @@ class TorrentController:
                 elif ev_type == EV_CHUNK_TIMEOUT:
                     (remote_addr, block_seq) = data
                     self.download_controller.on_peer_timeout(remote_addr, block_seq)
+                elif ev_type == EV_CHOKE_STATUS_CHANGE:
+                    (remote_addr, choke_status) = data
+                    self.download_controller.on_peer_choke_status_change(remote_addr, choke_status)
             if not self.events.empty():
                 continue
             if timeout:
@@ -138,6 +142,9 @@ class TorrentController:
                     self.controller.get_peer_conn(task[0]).async_request_chunk(self.torrent_hash, want_chunk_id)
 
         self.dir_controller.flush_all()
+
+    def on_peer_choke_status_change(self, peer: IPPort, status: bool):
+        self.events.put_nowait((EV_CHOKE_STATUS_CHANGE, (peer, status)))
 
     def on_peer_respond_chunk_req(self, peer_addr: IPPort, succeeded: bool, block_id: int):
         self.events.put_nowait((EV_PEER_RESPOND, (peer_addr, succeeded, block_id)))

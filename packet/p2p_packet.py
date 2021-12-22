@@ -127,10 +127,13 @@ class ACKRequestChunk(ACKPacket):
 class SetChokeStatus(BasePacket):
     def __init__(self):
         super(SetChokeStatus, self).__init__(TYPE_SET_CHOKE_STATUS);
+        self.torrent_hash: bytes = b''
         self.choke_status: bool = False
 
     def __pack_internal__(self, w: ByteWriter):
+        w.write_bytes(self.torrent_hash)
         w.write_int(1 if self.choke_status else 0)
 
     def __unpack_internal__(self, r: ByteReader):
+        self.torrent_hash = r.read_bytes(32)
         self.choke_status = True if r.read_int() == 1 else False
