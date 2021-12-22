@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import threading
 import warnings
 from collections import namedtuple
 from math import floor
@@ -27,7 +28,7 @@ class _BaseTrafficMonitor:
         self._downlink_list: List[OneContrib] = []
 
     def feed_uplink(self, packet_size: int):
-        self._uplink_list.append((packet_size, current_time_ms()))
+        self._uplink_list.append(OneContrib(packet_size, current_time_ms()))
 
     def get_uplink_rate(self) -> int:
         self._update_uplink_rate()
@@ -39,8 +40,9 @@ class _BaseTrafficMonitor:
 
     def _update_uplink_rate(self):
         valid_index: int = None
+        cur_time_ms: int = current_time_ms()
         for i, record in enumerate(self._uplink_list):
-            if record.time - current_time_ms() < SPEED_MONITOR_TIME:
+            if cur_time_ms - record.time < SPEED_MONITOR_TIME:
                 valid_index = i
                 break
         if valid_index:
@@ -48,24 +50,27 @@ class _BaseTrafficMonitor:
 
     def feed_downlink(self, packet_size: int):
         self.last_active = current_time_ms()
-        self._downlink_list.append((packet_size, self.last_active))
+        self._downlink_list.append(OneContrib(packet_size, self.last_active))
 
     def get_downlink_rate(self):
         self._update_downlink_rate()
         total_time: int = current_time_ms() - self.start_time \
-            if current_time_ms() - self.start_time < 5 \
+            if current_time_ms() - self.start_time < SPEED_MONITOR_TIME*1000 \
             else SPEED_MONITOR_TIME
         self._downlink_rate = floor(sum(map(lambda x: x.size, self._downlink_list)) / total_time)
         return self._downlink_rate
 
     def _update_downlink_rate(self):
         valid_index: int = None
+        cur_time_ms: int = current_time_ms()
         for i, record in enumerate(self._downlink_list):
-            if record.time - current_time_ms() < SPEED_MONITOR_TIME:
+            if cur_time_ms - record.time < SPEED_MONITOR_TIME*1000:
                 valid_index = i
                 break
+        print(f'thread {threading.current_thread()} remain from: {valid_index}')
+        # print(f'thread {threading.current_thread()} len: {len(self,)}')
         if valid_index:
-            self._uplink_list = self._uplink_list[valid_index:]
+            self._downlink_list = self._downlink_list[valid_index:]
 
 
 class SockManTrafficMonitor(_BaseTrafficMonitor):

@@ -20,7 +20,9 @@ class TitfortatDownloadController(AbstractDownloadController):
         self.peer_sim_numbers_reseter = threading.Timer(10, function=self.reseter)
         self.peer_sim_numbers_reseter.start()
         self.last_time = current_time_ms()
+        self.times = 0
         self.unchoking_peers: Set[IPPort] = set()
+        self.enable_log = True
 
     def reseter(self):
         for p in self.peer_list:
@@ -56,13 +58,16 @@ class TitfortatDownloadController(AbstractDownloadController):
         # Don't remove them from pending_blocks
         # lower down peer_addr's level? but should be done in random alg
 
-    def __cmp(elem):
-        return elem[1]
-
-    def __set_choking_status(self, peer: IPPort, status: bool):
-        print("peer ", peer, " choking status to ", status)
+    def _set_choking_status(self, peer: IPPort, status: bool):
+        # print("peer ", peer, " choking status to ", status)
         conn: P2PConn = self.controller.controller.get_peer_conn(peer)
         conn.notify_choke_status(status)
+
+    def _log(self, s: str):
+        # with open('choking_event.log','w') as f:
+        #     f.write(s+'\n')
+        if self.enable_log:
+            print(s)
 
     def evaluate(self):
         peers = list(self.peer_list)
@@ -71,9 +76,9 @@ class TitfortatDownloadController(AbstractDownloadController):
         for peer in peers:
             conn: P2PConn = self.controller.controller.get_peer_conn(peer)
             if not conn.choke_status:
-                aval_peers.append((peer, conn.downlink_speed()))
+                aval_peers.append((peer, conn.traffic_monitor.get_downlink_rate()))
 
-        aval_peers.sort(key=self.__cmp, reverse=True)
+        aval_peers.sort(key=lambda x:x[1], reverse=True)
 
         new_unchoking_peers: Set[IPPort] = set()
         length = len(aval_peers)
@@ -84,32 +89,43 @@ class TitfortatDownloadController(AbstractDownloadController):
         peers_on_choking = list(self.unchoking_peers.difference(new_unchoking_peers))
         peers_on_unchoking = list(new_unchoking_peers.difference(self.unchoking_peers))
 
+        self._log("[CP2P, {}] update unchoking list ".format(self.controller.controller.local_addr))
+        self._log("old unchoking list: "+ str(list(self.unchoking_peers)))
+        self._log("new unchoking list: " + str(list(new_unchoking_peers)))
         for peer in peers_on_unchoking:
-            self.__set_choking_status(peer, False)
+            self._log("unchoke "+str(peer))
+            self._set_choking_status(peer, False)
 
         for peer in peers_on_choking:
-            self.__set_choking_status(peer, True)
+            self._log("choke "+str(peer))
+            self._set_choking_status(peer, True)
 
         self.unchoking_peers = new_unchoking_peers
 
     def optimistic_unchoke(self):
         peers = list(self.peer_list)
         choking_peers = [peer for peer in peers if peer not in self.unchoking_peers]
+        if not choking_peers:
+            return
         peer = random.choice(choking_peers)
-        self.__set_choking_status(peer, False)
+        self._set_choking_status(peer, False)
 
     def get_next_download_task(self) -> List[Tuple[IPPort, List[int]]]:
         wanted = set(range(1, 1 + self.controller.dir_controller.torrent_block_count)) \
             .difference(self.controller.dir_controller.get_local_blocks())
         peers = list(self.peer_list)
 
-        if(current_time_ms() - self.last_time % 10000 == 0):
+        #print("time = ", current_time_ms() - self.last_time)
+
+        if(current_time_ms() - self.last_time >= 10000):
             self.evaluate()
+            self.last_time = current_time_ms()
+            self.times += 1
             pass
 
-        if(current_time_ms() - self.last_time == 30000):
+        if(self.times >= 3):
             self.optimistic_unchoke()
-            self.last_time = current_time_ms();
+            self.times = 0
             pass
 
         for i in range(len(peers)):

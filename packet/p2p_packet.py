@@ -130,7 +130,7 @@ class SetChokeStatus(BasePacket):
         self.choke_status: bool = False
 
     def __pack_internal__(self, w: ByteWriter):
-        w.write_bytes(self.choke_status)
+        w.write_int(1 if self.choke_status else 0)
 
     def __unpack_internal__(self, r: ByteReader):
-        self.choke_status = r.read_bytes()
+        self.choke_status = True if r.read_int() == 1 else False
