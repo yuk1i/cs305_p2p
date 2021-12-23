@@ -32,10 +32,7 @@ class _BaseTrafficMonitor:
 
     def get_uplink_rate(self) -> int:
         self._update_uplink_rate()
-        total_time: int = current_time_ms() - self.start_time \
-            if current_time_ms() - self.start_time < SPEED_MONITOR_TIME*1000 \
-            else SPEED_MONITOR_TIME
-        self._uplink_rate = floor(sum(map(lambda x: x.size, self._uplink_list)) / total_time)
+        self._uplink_rate = floor(sum(map(lambda x: x.size, self._uplink_list)) / self.total_time)
         return self._uplink_rate
 
     def _update_uplink_rate(self):
@@ -54,10 +51,7 @@ class _BaseTrafficMonitor:
 
     def get_downlink_rate(self):
         self._update_downlink_rate()
-        total_time: int = current_time_ms() - self.start_time \
-            if current_time_ms() - self.start_time < SPEED_MONITOR_TIME*1000 \
-            else SPEED_MONITOR_TIME
-        self._downlink_rate = floor(sum(map(lambda x: x.size, self._downlink_list)) / total_time)
+        self._downlink_rate = floor(sum(map(lambda x: x.size, self._downlink_list)) / self.total_time)
         return self._downlink_rate
 
     def _update_downlink_rate(self):
@@ -71,6 +65,12 @@ class _BaseTrafficMonitor:
         # print(f'thread {threading.current_thread()} len: {len(self,)}')
         if valid_index:
             self._downlink_list = self._downlink_list[valid_index:]
+
+    @property
+    def total_time(self):
+        return max(1, (current_time_ms() - self.start_time) // 1000) \
+            if current_time_ms() - self.start_time < SPEED_MONITOR_TIME * 1000 \
+            else SPEED_MONITOR_TIME
 
 
 class SockManTrafficMonitor(_BaseTrafficMonitor):
