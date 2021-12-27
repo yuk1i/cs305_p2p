@@ -53,7 +53,7 @@ class Statistics:
         if "data" not in request_uri(env, include_query=False):
             print(f"Requesting {request_uri(env, include_query=False)}")
             http_stuff('200 OK', [('Content-type', 'text/html')])
-            with open("../statistics_web/index.html", "rb") as f:
+            with open("statistics_web/index.html", "rb") as f:
                 b = f.read()
                 return [b]
         with self.lock:

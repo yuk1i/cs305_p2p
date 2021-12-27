@@ -9,7 +9,7 @@ from SC_model.server import Server
 
 tracker_address = ("127.0.0.1", 10086)
 
-FILE_PATH = "test_files/bg.png"
+FILE_PATH = "tests/test_files/bg.png"
 
 print(os.system("pwd"))
 

@@ -5,7 +5,7 @@ from PClient import PClient
 
 tracker_address = ("127.0.0.1", 10086)
 
-FILE_PATH = "test_files/bg.png"
+FILE_PATH = "tests/test_files/bg.png"
 
 if __name__ == '__main__':
     # A,B,C,D,E join the network
