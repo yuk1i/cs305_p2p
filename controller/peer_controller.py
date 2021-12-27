@@ -38,11 +38,11 @@ class PeerController(controller.Controller):
             return
         self.tracker_conn.notify(self.local_addr)
 
-    def register_torrent(self, torrent: Torrent, torrent_file_path: str, save_dir: str) -> controller.TorrentController:
+    def register_torrent(self, torrent: Torrent, torrent_file_path: str, save_dir: str, tit_tat=False) -> controller.TorrentController:
         torrent_hash = torrent.torrent_hash
         if torrent_hash in self.active_torrents:
             return self.active_torrents[torrent_hash]
-        self.active_torrents[torrent_hash] = controller.TorrentController(torrent, self, save_dir, torrent_file_path)
+        self.active_torrents[torrent_hash] = controller.TorrentController(torrent, self, save_dir, torrent_file_path, tit_tat)
         self.tracker_conn.register(torrent_hash)
         return self.active_torrents[torrent_hash]
 

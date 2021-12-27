@@ -27,8 +27,8 @@
                 </li>
                 <li class="list-group-item total-speed">
                     Status: <span class="peer-stauts">Metadata</span>,
-                    Download: <span class="total-dl">0</span> KiB/s,
-                    Upload: <span class="total-ul">0</span> KiB/s </li>
+                    DL: <span class="total-dl">0</span> KiB/s,
+                    UL: <span class="total-ul">0</span> KiB/s </li>
                 <li class="list-group-item">
                     <div class="block-container">
                     </div>
@@ -129,8 +129,9 @@
         const peer_speed_obj = $(
             '<li class="list-group-item peer-speed-item" peer-port="">\
                             Peer - <span class="peer-spd-port">0</span> : \
-                            Download: <span class="peer-dl">0</span> KiB/s \
-                            Upload: <span class="peer-ul">0</span> KiB/s \
+                            DL: <span class="peer-dl">0</span> KiB/s \
+                            UL: <span class="peer-ul">0</span> KiB/s \
+                            ST: <span class="peer-status"></span> \
                         </li>');
         const peer_obj = $("#peer_demo");
 
@@ -212,13 +213,14 @@
                             const ps = peer.find('.peer-speed-item[peer-port=' + pp + ']');
                             ps.children(".peer-dl").html(cur["peers"][pp]["download"]);
                             ps.children(".peer-ul").html(cur["peers"][pp]["upload"]);
+                            ps.children(".peer-status").html(cur["peers"][pp]["status"]);
                         }
                     }
                 }
             });
         }
 
-        setInterval(update, 500);
+        setInterval(update, 250);
 
         // const peer = $("#peer_114514");
         // for (var i = 1; i <= 200; i++) {

@@ -25,7 +25,7 @@ MODE_FULL = 0
 
 class TorrentController:
     def __init__(self, torrent: Torrent, ctrl: controller.PeerController,
-                 save_dir: str, torrent_file_path: str):
+                 save_dir: str, torrent_file_path: str, use_tit_for_tat: False):
         """
         A torrent controller must be inited by at least the hash of the torrent,
         which can be from the hash str, torrent file (path), or Torrent object.
@@ -40,8 +40,10 @@ class TorrentController:
         # self.chunk_status: List[bool] = list()
         self.peer_list: List[IPPort] = list()
         self.peer_chunk_info: Dict[IPPort, controller.RemoteChunkInfo] = dict()
-        self.download_controller = controller.download.generate_download_controller(
-            controller.download.DOWN_ALG_RANDOM)(self)
+        if use_tit_for_tat:
+            self.download_controller = controller.download.TitfortatDownloadController(self)
+        else:
+            self.download_controller = controller.download.RandomDownloadController(self)
         # self.tracker_addr: IPPort = ("", 0)
         self.thread = threading.Thread(target=self.__run__)
         self.events = queue.Queue()

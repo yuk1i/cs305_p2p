@@ -3,6 +3,7 @@ import threading
 from typing import List, Dict, Set, Tuple
 
 import controller
+import statistics
 from conn import P2PConn
 from packet.p2p_packet import SetChokeStatus
 from utils import IPPort, current_time_ms
@@ -51,16 +52,17 @@ class TitfortatDownloadController(AbstractDownloadController):
 
     def on_peer_choke_status_change(self, peer: IPPort, choke_status: bool):
 
-        log : str = ("before "+str(self.choked_by_peers)) + '\n'
+        log: str = ("before " + str(self.choked_by_peers)) + '\n'
         if choke_status:
             self.choked_by_peers.add(peer)
+            statistics.get_instance().set_peer_status(self.controller.controller.local_addr[1], peer[1], "Choked")
         else:
             if peer in self.choked_by_peers:
                 self.choked_by_peers.remove(peer)
+            statistics.get_instance().set_peer_status(self.controller.controller.local_addr[1], peer[1], "Unchoked")
 
-        log += ("after "+str(self.choked_by_peers)) + '\n'
+        log += ("after " + str(self.choked_by_peers)) + '\n'
         self._log("choked by peers updating ", log)
-
 
     def on_peer_timeout(self, peer_addr: IPPort, chunk_seq_id: int):
         print(f"[ALG] block {chunk_seq_id} timeout from {peer_addr}")
@@ -76,6 +78,10 @@ class TitfortatDownloadController(AbstractDownloadController):
         # print("peer ", peer, " choking status to ", status)
         conn: P2PConn = self.controller.controller.get_peer_conn(peer)
         conn.notify_choke_status(self.controller.torrent_hash, status)
+        if status:
+            statistics.get_instance().set_peer_status(self.controller.controller.local_addr[1], peer[1], "Choked")
+        else:
+            statistics.get_instance().set_peer_status(self.controller.controller.local_addr[1], peer[1], "Unchoked")
 
     def _log(self, event: str, s: str):
         # with open('choking_event.log','w') as f:
@@ -91,28 +97,29 @@ class TitfortatDownloadController(AbstractDownloadController):
 
         for peer in peers:
             if peer not in self.choked_by_peers:
-                aval_peers.append((peer, self.controller.controller.get_peer_conn(peer).traffic_monitor.get_downlink_rate()))
+                aval_peers.append(
+                    (peer, self.controller.controller.get_peer_conn(peer).traffic_monitor.get_downlink_rate()))
 
-        aval_peers.sort(key=lambda x:x[1], reverse=True)
+        aval_peers.sort(key=lambda x: x[1], reverse=True)
 
         new_unchoking_peers: Set[IPPort] = set()
         length = len(aval_peers)
 
-        for i in range(0,min(4, length)):
+        for i in range(0, min(4, length)):
             new_unchoking_peers.add(aval_peers[i][0])
 
         peers_on_choking = list(self.unchoking_peers.difference(new_unchoking_peers))
         peers_on_unchoking = list(new_unchoking_peers.difference(self.unchoking_peers))
 
-        log : str = ''
-        log += ("old unchoking list: "+ str(list(self.unchoking_peers))) + '\n'
+        log: str = ''
+        log += ("old unchoking list: " + str(list(self.unchoking_peers))) + '\n'
         log += ("new unchoking list: " + str(list(new_unchoking_peers))) + '\n'
         for peer in peers_on_unchoking:
-            log += ("unchoke "+str(peer)) + '\n'
+            log += ("unchoke " + str(peer)) + '\n'
             self._set_choking_status(peer, False)
 
         for peer in peers_on_choking:
-            log += ("choke "+str(peer)) + '\n'
+            log += ("choke " + str(peer)) + '\n'
             self._set_choking_status(peer, True)
 
         self._log(" update unchoking list ", log)
@@ -127,8 +134,8 @@ class TitfortatDownloadController(AbstractDownloadController):
         peer = random.choice(choking_peers)
         self.unchoking_peers.add(peer)
 
-        log: str = ("new unchoking list: "+ str(list(self.unchoking_peers))) + '\n'
-        log += ("optimistic unchoke "+str(peer))
+        log: str = ("new unchoking list: " + str(list(self.unchoking_peers))) + '\n'
+        log += ("optimistic unchoke " + str(peer))
         self._log(" optimistic unchoke", log)
 
         self._set_choking_status(peer, False)
@@ -138,15 +145,15 @@ class TitfortatDownloadController(AbstractDownloadController):
             .difference(self.controller.dir_controller.get_local_blocks())
         all_peers = list(self.peer_list)
 
-        #print("time = ", current_time_ms() - self.last_time)
+        # print("time = ", current_time_ms() - self.last_time)
 
-        if(current_time_ms() - self.last_time >= 10000):
+        if (current_time_ms() - self.last_time >= 10000):
             self.evaluate()
             self.last_time = current_time_ms()
             self.times += 1
             pass
 
-        if(self.times >= 3):
+        if (self.times >= 3):
             self.optimistic_unchoke()
             self.times = 0
             pass

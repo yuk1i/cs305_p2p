@@ -19,13 +19,7 @@ class PeerInfo:
         self.status = "Not Started"
         self.status_updated = False
 
-
-EV_EXIT = 1
-EV_NEW_PEER = 2
-EV_PEER_TORRENT_DOWNLOADED = 3
-EV_NEW_CHUNK = 4
-EV_NEW_CHUNKS = 5
-EV_PEER_STATUS_CHANGED = 6
+        self.peer_status: Dict[int, str] = dict()
 
 
 def get_speed_str(speed):
@@ -108,9 +102,13 @@ class Statistics:
                 pd = dict()
                 for pp in pc.peer_conns:
                     ppc = pc.peer_conns[pp]
-                    pd[pp[1]] = dict()
-                    pd[pp[1]]["upload"] = get_speed_str(ppc.traffic_monitor.get_uplink_rate())
-                    pd[pp[1]]["download"] =  get_speed_str(ppc.traffic_monitor.get_downlink_rate())
+                    pp_port = pp[1]
+                    pd[pp_port] = dict()
+                    pd[pp_port]["upload"] = get_speed_str(ppc.traffic_monitor.get_uplink_rate())
+                    pd[pp_port]["download"] = get_speed_str(ppc.traffic_monitor.get_downlink_rate())
+                    if pp_port not in pinfo.peer_status:
+                        pinfo.peer_status[pp_port] = "N"
+                    pd[pp_port]["status"] = pinfo.peer_status[pp_port]
                 speeds[p]["peers"] = pd
             ret["speed"] = speeds
 
@@ -147,6 +145,10 @@ class Statistics:
     def on_peer_new_chunk(self, peer_port, chunk_seq, src_peer_port):
         with self.lock:
             self.peer_list[peer_port].new_chunk_from[chunk_seq] = src_peer_port
+
+    def set_peer_status(self, peer_port, target_peer_port, str_status):
+        with self.lock:
+            self.peer_list[peer_port].peer_status[target_peer_port] = str_status
 
 
 global_statistics = Statistics()

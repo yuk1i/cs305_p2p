@@ -18,8 +18,9 @@ class PClient:
     EV_CANCEL = 3
     EV_CLOSE = 4
 
-    def __init__(self, tracker_addr: Tuple[str, int], proxy=None, port=None, upload_rate=0, download_rate=0):
+    def __init__(self, tracker_addr: Tuple[str, int], proxy=None, port=None, upload_rate=0, download_rate=0, tit_tat=False):
         self.use_mp = False
+        self.tit_tat = tit_tat = True
         if self.use_mp:
             # For myself: read in pipe_me, write in pipe_me
             # For mp:     read in pipe_mp, write in pipe_mp
@@ -69,7 +70,7 @@ class PClient:
         random_name = bytes_to_hexstr(random_bytes(32))
         t = Torrent.generate_torrent(file_path, random_name, 10000)
         t.__is_school_torrent__ = True
-        self.peerController.register_torrent(t, save_dir + random_name + ".torrent", os.path.dirname(file_path))
+        self.peerController.register_torrent(t, save_dir + random_name + ".torrent", os.path.dirname(file_path), self.tit_tat)
         self.peerController.start_download(t.torrent_hash)
         return t.torrent_hash
 
@@ -77,7 +78,7 @@ class PClient:
         dummy_t = Torrent.create_dummy_torrent(fid)
         dummy_t.__is_school_torrent__ = True
         random_name = bytes_to_hexstr(random_bytes(16))
-        self.peerController.register_torrent(dummy_t, save_dir + random_name + ".torrent", save_dir + random_name)
+        self.peerController.register_torrent(dummy_t, save_dir + random_name + ".torrent", save_dir + random_name, self.tit_tat)
         self.peerController.start_download(dummy_t.torrent_hash)
         self.peerController.active_torrents[fid].wait_downloaded()
         return self.peerController.active_torrents[fid].dir_controller.get_tested_binary()
