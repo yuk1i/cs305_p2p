@@ -234,9 +234,9 @@ class DirectoryController(AbstractDirectoryController):
             self.opened_files[file.seq] = open(save_path, "rb+")
 
     def get_tested_binary(self):
-        # This function should only be used to work with School tests: one file, return binary direct
+        # This function should only be used to work with School unit_tests: one file, return binary direct
         # with self.write_lock:
         #     self.opened_files[1].seek(0)
         #     return self.opened_files[1].read()\
-        # Use DummyDirController to pass school tests
-        raise NotImplementedError("Use DummyDirController to pass school tests")
+        # Use DummyDirController to pass school unit_tests
+        raise NotImplementedError("Use DummyDirController to pass school unit_tests")

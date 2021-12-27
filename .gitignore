@@ -1,5 +1,5 @@
 venv/
 Project2_P2P/
-/tests/excluded/
+/unit_tests/excluded/
 .idea
 SC_model
