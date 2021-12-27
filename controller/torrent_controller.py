@@ -101,7 +101,7 @@ class TorrentController:
         self.dir_controller.on_torrent_filled()
         statistics.get_instance().on_peer_torrent_downloaded(self.controller.local_addr[1],
                                                              self.dir_controller.torrent_block_count)
-        self.update_peers_chunks()
+        self.update_peers_chunks(0)
         # Start polling
         self.status = controller.TorrentStatus.TORRENT_STATUS_DOWNLOADING
         statistics.get_instance().on_peer_status_changed(self.controller.local_addr[1], "Downloading")
@@ -130,8 +130,7 @@ class TorrentController:
                     (peer_addr, succeed, chunk_seq_id) = data
                     if succeed:
                         self.download_controller.on_peer_respond_succeed(peer_addr, chunk_seq_id)
-                        statistics.get_instance().on_peer_new_chunk(self.controller.local_addr[1], chunk_seq_id,
-                                                                    peer_addr[1])
+
                     else:
                         self.download_controller.on_peer_respond_failed(peer_addr, chunk_seq_id)
                 elif ev_type == EV_CHUNK_TIMEOUT:
@@ -143,18 +142,8 @@ class TorrentController:
             if not self.events.empty():
                 continue
             if timeout:
-                self.update_peers_chunks()
+                self.update_peers_chunks(len(self.dir_controller.get_local_blocks()) / self.dir_controller.torrent_block_count * 100)
                 speed: Dict[int, Tuple[str, str]] = dict()  # TODO: Use IPPort here
-                for peer in self.peer_list:
-                    p = peer[1]
-                    pc = self.controller.get_peer_conn(peer)
-                    speed[p] = ("{:.2f}".format(pc.traffic_monitor.get_uplink_rate() / 1024),
-                                "{:.2f}".format(pc.traffic_monitor.get_downlink_rate() / 1024))
-                statistics.get_instance().update_peer_speed(self.controller.local_addr[1], speed)
-                statistics.get_instance() \
-                    .update_speed(self.controller.local_addr[1],
-                                  "{:.2f}".format(self.controller.socket.traffic_monitor.get_uplink_rate() / 1024),
-                                  "{:.2f}".format(self.controller.socket.traffic_monitor.get_downlink_rate() / 1024))
             if self.dir_controller.is_download_completed():
                 continue
             # 抽象的下载规划算法
@@ -207,7 +196,7 @@ class TorrentController:
             self.peer_chunk_info[remote_addr] = controller.RemoteChunkInfo()
         self.download_controller.on_new_peer(remote_addr)
 
-    def update_peers_chunks(self):
+    def update_peers_chunks(self, percentage):
         """
         Send Update chunk info Request to peers, and send mine
         :return:
@@ -215,7 +204,7 @@ class TorrentController:
         # Update Chunk Info
         my_block = self.dir_controller.get_local_blocks().copy()
         for peer_addr in self.peer_list:
-            if self.peer_chunk_info[peer_addr].should_update():
+            if self.peer_chunk_info[peer_addr].should_update(percentage):
                 self.peer_chunk_info[peer_addr].mark_pending()
                 p2p_conn = self.controller.get_peer_conn(peer_addr)
                 p2p_conn.async_update_chunk_info(self.torrent_hash, my_block)
@@ -239,5 +228,4 @@ class TorrentController:
         if self.dir_controller:
             self.dir_controller.close()
         statistics.get_instance().on_peer_status_changed(self.controller.local_addr[1], "Closed")
-        statistics.get_instance().update_speed(self.controller.local_addr[1], "NaN", "NaN")
         # TODO: Exit

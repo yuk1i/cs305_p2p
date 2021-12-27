@@ -46,7 +46,7 @@ class PClient:
         self.peerController = controller.PeerController(self.proxy, self.my_addr, self.tracker_addr)
         self.peerController.socket.mtu = self.mtu
         self.peerController.notify_tracker()
-        statistics.get_instance().on_new_client(self.my_addr[1])
+        statistics.get_instance().on_new_client(self.my_addr[1], self.peerController)
         statistics.get_instance().start()
         if not self.use_mp:
             return

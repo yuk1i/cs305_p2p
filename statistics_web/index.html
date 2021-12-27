@@ -19,12 +19,6 @@
                 Peer <span class="peer-port"></span>
             </div>
             <ul class="list-group list-group-flush">
-                <li class="list-group-item">
-                    <div class="progress">
-                        <div class="progress-bar progress-bar-striped progress-bar-animated" role="progressbar"
-                            aria-valuenow="0" aria-valuemin="0" aria-valuemax="100" style="width: 0%"></div>
-                    </div>
-                </li>
                 <li class="list-group-item ">
                     <ul class="list-group peer-speed">
                         <li class="list-group-item active" aria-current="true">Peers Speed</li>
@@ -92,7 +86,7 @@
         }
 
         .block-container .block.C {
-            background-color: rgb(255, 0, 149);
+            background-color: rgb(148, 17, 17);
         }
 
         .block-container .block.D {
@@ -114,10 +108,22 @@
         .block-container .block.H {
             background-color: rgb(255, 135, 56);
         }
+
+        .block-container .block.I {
+            background-color: rgb(88, 157, 163);
+        }
+
+        .block-container .block.J {
+            background-color: rgb(255, 0, 149);
+        }
+
+        .block-container .block.K {
+            background-color: rgb(130, 170, 0);
+        }
     </style>
     <script>
-        const peer_color = {};
-        const colors = ['A', 'B', 'C', 'D', 'E', 'F', 'G', 'H'];
+        var peer_color = {};
+        const colors = ['A', 'B', 'C', 'D', 'E', 'F', 'G', 'H', 'I', 'J', 'K'];
         "use strict"
         const block_obj = $('<span class="block"></span>');
         const peer_speed_obj = $(
@@ -173,6 +179,7 @@
                     console.log(json);
                     if (json["first"]) {
                         $("#container").children("div:not(#peer_demo)").remove();
+                        peer_color = {};
                     }
                     for (const i in json["new_peer"]) {
                         init_peer(json["new_peer"][i]);

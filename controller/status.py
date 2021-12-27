@@ -38,9 +38,10 @@ class RemoteChunkInfo:
         if element in self.chunks:
             self.chunks.remove(element)
 
-    def should_update(self):
-        return utils.bytes_utils.current_time_ms() - self.last_update >= self.UPDATE_INTERVAL * 1000 and not self.pending
+    def should_update(self, percentage):
+        percentage = (max(40, percentage) / 100)
+        return utils.bytes_utils.current_time_ms() - self.last_update >= self.UPDATE_INTERVAL * \
+               percentage * 1000 and not self.pending
 
     def mark_pending(self):
         self.pending = True
-

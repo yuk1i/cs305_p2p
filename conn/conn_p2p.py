@@ -3,6 +3,7 @@ from __future__ import annotations
 from typing import Tuple, Any
 
 import controller
+import statistics
 from conn import Conn
 from packet.p2p_packet import *
 from utils import IPPort, hexstr_to_bytes, bytes_to_hexstr
@@ -52,6 +53,8 @@ class P2PConn(Conn):
                                 "[CP2P, {}] Save Block {} from {}".format(self.controller.local_addr, pkt.chunk_seq_id,
                                                                           self.remote_addr))
                             tc.dir_controller.save_block(pkt.chunk_seq_id, pkt.data)
+                            statistics.get_instance().on_peer_new_chunk(self.controller.local_addr[1], pkt.chunk_seq_id,
+                                                                        self.remote_addr[1])
                             success = True
                         else:
                             print("chunk hash failed for id %s" % pkt.chunk_seq_id)
