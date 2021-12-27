@@ -61,7 +61,7 @@ class _BaseTrafficMonitor:
             if cur_time_ms - record.time < SPEED_MONITOR_TIME*1000:
                 valid_index = i
                 break
-        print(f'thread {threading.current_thread()} remain from: {valid_index}')
+        # print(f'thread {threading.current_thread()} remain from: {valid_index}')
         # print(f'thread {threading.current_thread()} len: {len(self,)}')
         if valid_index:
             self._downlink_list = self._downlink_list[valid_index:]

@@ -63,6 +63,8 @@ class DummyDirectoryController(AbstractDirectoryController):
 
     def on_torrent_filled(self):
         self.torrent_block_count = len(self.torrent.get_file(1).blocks)
+        if len(self.data) == self.torrent.get_file(1).size:
+            return
         self.data = bytearray(self.torrent_block_count * self.torrent.block_size)
 
     def is_download_completed(self) -> bool:

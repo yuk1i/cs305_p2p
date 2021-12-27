@@ -8,6 +8,7 @@ import time
 from typing import List, Tuple, Dict, Set
 
 import controller
+import statistics
 import utils.bytes_utils
 from torrent import Torrent
 from utils import IPPort
@@ -39,7 +40,8 @@ class TorrentController:
         # self.chunk_status: List[bool] = list()
         self.peer_list: List[IPPort] = list()
         self.peer_chunk_info: Dict[IPPort, controller.RemoteChunkInfo] = dict()
-        self.download_controller = controller.download.generate_download_controller(controller.download.DOWN_ALG_RANDOM)(self)
+        self.download_controller = controller.download.generate_download_controller(
+            controller.download.DOWN_ALG_RANDOM)(self)
         # self.tracker_addr: IPPort = ("", 0)
         self.thread = threading.Thread(target=self.__run__)
         self.events = queue.Queue()
@@ -55,6 +57,7 @@ class TorrentController:
         # if self.
 
     def __run__(self):
+        statistics.get_instance().on_peer_status_changed(self.controller.local_addr[1], "Downloading Metadata")
         # Request peers first
         while len(self.peer_list) == 0:
             self.controller.retrieve_peer_list(self.torrent_hash)
@@ -96,9 +99,16 @@ class TorrentController:
                 print("[TC] Errored when trying to decode torrent from binary")
         print("[TC] Successfully obtain torrent file, size: %s" % (len(self.torrent.__json_str__)))
         self.dir_controller.on_torrent_filled()
+        statistics.get_instance().on_peer_torrent_downloaded(self.controller.local_addr[1],
+                                                             self.dir_controller.torrent_block_count)
         self.update_peers_chunks()
         # Start polling
         self.status = controller.TorrentStatus.TORRENT_STATUS_DOWNLOADING
+        statistics.get_instance().on_peer_status_changed(self.controller.local_addr[1], "Downloading")
+        if self.dir_controller.is_download_completed():
+            # Am the uploader!
+            statistics.get_instance().on_peer_fill_chunk_uploader(self.controller.local_addr[1],
+                                                                  self.dir_controller.torrent_block_count)
         ev_type = 0
         data = None
         # pending_blocks: Set[int] = set()
@@ -120,6 +130,8 @@ class TorrentController:
                     (peer_addr, succeed, chunk_seq_id) = data
                     if succeed:
                         self.download_controller.on_peer_respond_succeed(peer_addr, chunk_seq_id)
+                        statistics.get_instance().on_peer_new_chunk(self.controller.local_addr[1], chunk_seq_id,
+                                                                    peer_addr[1])
                     else:
                         self.download_controller.on_peer_respond_failed(peer_addr, chunk_seq_id)
                 elif ev_type == EV_CHUNK_TIMEOUT:
@@ -132,6 +144,17 @@ class TorrentController:
                 continue
             if timeout:
                 self.update_peers_chunks()
+                speed: Dict[int, Tuple[str, str]] = dict()  # TODO: Use IPPort here
+                for peer in self.peer_list:
+                    p = peer[1]
+                    pc = self.controller.get_peer_conn(peer)
+                    speed[p] = ("{:.2f}".format(pc.traffic_monitor.get_uplink_rate() / 1024),
+                                "{:.2f}".format(pc.traffic_monitor.get_downlink_rate() / 1024))
+                statistics.get_instance().update_peer_speed(self.controller.local_addr[1], speed)
+                statistics.get_instance() \
+                    .update_speed(self.controller.local_addr[1],
+                                  "{:.2f}".format(self.controller.socket.traffic_monitor.get_uplink_rate() / 1024),
+                                  "{:.2f}".format(self.controller.socket.traffic_monitor.get_downlink_rate() / 1024))
             if self.dir_controller.is_download_completed():
                 continue
             # 抽象的下载规划算法
@@ -140,7 +163,8 @@ class TorrentController:
                 task: Tuple[IPPort, List[int]]
                 for want_chunk_id in task[1]:
                     self.controller.get_peer_conn(task[0]).async_request_chunk(self.torrent_hash, want_chunk_id)
-
+        statistics.get_instance().on_peer_status_changed(self.controller.local_addr[1], "Uploading")
+        self.status = controller.TorrentStatus.TORRENT_STATUS_FINISHED
         self.dir_controller.flush_all()
 
     def on_peer_choke_status_change(self, peer: IPPort, status: bool):
@@ -214,4 +238,6 @@ class TorrentController:
             self.thread.join()
         if self.dir_controller:
             self.dir_controller.close()
+        statistics.get_instance().on_peer_status_changed(self.controller.local_addr[1], "Closed")
+        statistics.get_instance().update_speed(self.controller.local_addr[1], "NaN", "NaN")
         # TODO: Exit

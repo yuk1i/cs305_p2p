@@ -3,6 +3,7 @@ import multiprocessing as mp
 from typing import Tuple
 
 import controller
+import statistics
 from utils.bytes_utils import random_bytes, bytes_to_hexstr
 from Proxy import Proxy
 from torrent import Torrent
@@ -45,6 +46,8 @@ class PClient:
         self.peerController = controller.PeerController(self.proxy, self.my_addr, self.tracker_addr)
         self.peerController.socket.mtu = self.mtu
         self.peerController.notify_tracker()
+        statistics.get_instance().on_new_client(self.my_addr[1])
+        statistics.get_instance().start()
         if not self.use_mp:
             return
         self.pipe_mp.send(123123)
@@ -67,7 +70,7 @@ class PClient:
         t = Torrent.generate_torrent(file_path, random_name, 10000)
         t.__is_school_torrent__ = True
         self.peerController.register_torrent(t, save_dir + random_name + ".torrent", os.path.dirname(file_path))
-        # self.peerController.start_download(t.torrent_hash)
+        self.peerController.start_download(t.torrent_hash)
         return t.torrent_hash
 
     def __download__(self, fid):
