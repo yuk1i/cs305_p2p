@@ -1,7 +1,7 @@
 
 # WARNING: This project is written and tested in **Debian GNU/Linux bookworm/sid x86_64**, AVOID USING WINDOWS, MACOS and WSL to run this project.
 
-# Python Version: 3.10, Please don't any older version
+# Python Version: 3.10, Please don't use any older version
 
 ```
 > python3 --version
