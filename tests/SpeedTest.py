@@ -1,3 +1,4 @@
+import os
 import sys
 import time
 from threading import Thread
@@ -8,12 +9,16 @@ from SC_model.server import Server
 
 tracker_address = ("127.0.0.1", 10086)
 
-with open("../Project2_P2P/test_files/bg.png", "rb") as bg:
+FILE_PATH = "test_files/bg.png"
+
+print(os.system("pwd"))
+
+with open(FILE_PATH, "rb") as bg:
     bs = bg.read()
 
 
 def client_download(client):
-    client.download("../test_files/bg.png")
+    client.download(FILE_PATH)
 
 
 if __name__ == '__main__':
@@ -23,7 +28,7 @@ if __name__ == '__main__':
     C = PClient(tracker_address, upload_rate=100000, download_rate=100000)
     D = PClient(tracker_address, upload_rate=100000, download_rate=100000)
     E = PClient(tracker_address, upload_rate=100000, download_rate=100000)
-    fid = A.register("../test_files/bg.png")
+    fid = A.register(FILE_PATH)
     files = {}
     clients = [B, C, D, E]
     threads = []
@@ -43,7 +48,7 @@ if __name__ == '__main__':
     for t in threads:
         t.join()
     print(f"Time of P2P model: {(time.time_ns() - time_start) * 1e-9}")
-    with open("../Project2_P2P/test_files/bg.png", "rb") as bg:
+    with open(FILE_PATH, "rb") as bg:
         bs = bg.read()
         for i in files:
             if files[i] != bs:

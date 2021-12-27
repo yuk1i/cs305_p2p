@@ -5,6 +5,7 @@ from PClient import PClient
 
 tracker_address = ("127.0.0.1", 10086)
 
+FILE_PATH = "test_files/bg.png"
 
 if __name__ == '__main__':
     # A,B,C,D,E join the network
@@ -16,7 +17,7 @@ if __name__ == '__main__':
 
     clients = [B, C, D, E]
     # A register a file and B download it
-    fid = A.register("../test_files/bg.png")
+    fid = A.register(FILE_PATH)
     threads = []
     files = {}
 
@@ -34,7 +35,7 @@ if __name__ == '__main__':
     for t in threads:
         t.join()
     # check the downloaded files
-    with open("../Project2_P2P/test_files/bg.png", "rb") as bg:
+    with open(FILE_PATH, "rb") as bg:
         bs = bg.read()
         for i in files:
             if files[i] != bs:
