@@ -38,8 +38,10 @@ class _BaseTrafficMonitor:
     def _update_uplink_rate(self):
         valid_index: int = None
         cur_time_ms: int = current_time_ms()
+        if len(self._uplink_list) and cur_time_ms - self._uplink_list[-1].time > SPEED_MONITOR_TIME*1000:
+            self._uplink_list.clear()
         for i, record in enumerate(self._uplink_list):
-            if cur_time_ms - record.time < SPEED_MONITOR_TIME:
+            if cur_time_ms - record.time < SPEED_MONITOR_TIME*1000:
                 valid_index = i
                 break
         if valid_index:
@@ -57,6 +59,8 @@ class _BaseTrafficMonitor:
     def _update_downlink_rate(self):
         valid_index: int = None
         cur_time_ms: int = current_time_ms()
+        if len(self._downlink_list) and cur_time_ms - self._downlink_list[-1].time > SPEED_MONITOR_TIME*1000:
+            self._downlink_list.clear()
         for i, record in enumerate(self._downlink_list):
             if cur_time_ms - record.time < SPEED_MONITOR_TIME*1000:
                 valid_index = i
