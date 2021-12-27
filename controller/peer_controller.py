@@ -4,7 +4,7 @@ import threading
 from typing import Tuple, Dict, List, Set
 
 import conn
-import proxy
+import Proxy
 import controller
 from torrent import Torrent
 from utils import IPPort
@@ -12,7 +12,7 @@ from utils.bytes_utils import random_long, bytes_to_int
 
 
 class PeerController(controller.Controller):
-    def __init__(self, pxy: proxy.Proxy, my_addr: IPPort, tracker_addr: IPPort):
+    def __init__(self, pxy: Proxy.Proxy, my_addr: IPPort, tracker_addr: IPPort):
         super(PeerController, self).__init__(pxy)
         self.active = True
         self.local_addr = my_addr

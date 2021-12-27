@@ -4,7 +4,7 @@ from typing import Tuple
 
 import controller
 from utils.bytes_utils import random_bytes, bytes_to_hexstr
-from proxy import Proxy
+from Proxy import Proxy
 from torrent import Torrent
 from utils import IPPort
 

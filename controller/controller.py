@@ -3,13 +3,13 @@ from __future__ import annotations
 from typing import Tuple
 
 import conn
-import proxy
+import Proxy
 from utils import IPPort
 
 
 class Controller:
-    def __init__(self, pxy: proxy.Proxy):
-        self.proxy: proxy.Proxy = pxy
+    def __init__(self, pxy: Proxy.Proxy):
+        self.proxy: Proxy.Proxy = pxy
         self.local_addr: IPPort = ("", 0)
         self.socket: conn.SocketManager = conn.SocketManager(self.proxy, self)
 

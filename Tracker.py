@@ -1,4 +1,4 @@
-from proxy import Proxy
+from Proxy import Proxy
 
 import controller
 

@@ -3,14 +3,14 @@ from __future__ import annotations
 from typing import Tuple, Dict, List, Set
 
 import conn
-import proxy
+import Proxy
 import controller
 from utils import IPPort
 from utils.bytes_utils import random_long, bytes_to_int
 
 
 class TrackerController(controller.Controller):
-    def __init__(self, pxy: proxy.Proxy):
+    def __init__(self, pxy: Proxy.Proxy):
         super(TrackerController, self).__init__(pxy)
         self.peers: List[Tuple[int, IPPort]] = list()
         # peer_list maps a UUID to peer_addr

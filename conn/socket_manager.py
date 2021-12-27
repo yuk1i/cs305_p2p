@@ -9,7 +9,7 @@ import controller
 import packet.deserializer
 
 import conn
-import proxy
+import Proxy
 from packet.base_packet import BasePacket, FLAG_REASSEMBLE, MASK_REVERSED
 from .traffic_monitor import SockManTrafficMonitor
 
@@ -17,7 +17,7 @@ from utils import bytes_utils, IPPort
 
 
 class SocketManager:
-    def __init__(self, pxy: proxy.Proxy, ctrl: controller.Controller):
+    def __init__(self, pxy: Proxy.Proxy, ctrl: controller.Controller):
         self.proxy = pxy
         self.controller = ctrl
         self.mapper: Dict[IPPort, conn.Conn] = dict()

@@ -10,7 +10,7 @@ import unittest
 import controller
 import utils.bytes_utils
 from controller import TrackerController, PeerController, Controller, TrackerStatus, TorrentStatus
-from proxy import Proxy
+from Proxy import Proxy
 from torrent import Torrent
 
 
