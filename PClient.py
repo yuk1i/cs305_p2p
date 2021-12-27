@@ -18,28 +18,35 @@ class PClient:
     EV_CLOSE = 4
 
     def __init__(self, tracker_addr: Tuple[str, int], proxy=None, port=None, upload_rate=0, download_rate=0):
-
-        # For myself: read in pipe_me, write in pipe_me
-        # For mp:     read in pipe_mp, write in pipe_mp
-        self.pipe_me, self.pipe_mp = mp.Pipe()
-        self.process = mp.Process(target=self.__start__, args=(tracker_addr, proxy, port, upload_rate, download_rate,))
-        self.process.start()
-        self.pipe_me.recv()
+        self.use_mp = False
+        if self.use_mp:
+            # For myself: read in pipe_me, write in pipe_me
+            # For mp:     read in pipe_mp, write in pipe_mp
+            self.pipe_me, self.pipe_mp = mp.Pipe()
+            self.process = mp.Process(target=self.__start__,
+                                      args=(tracker_addr, proxy, port, upload_rate, download_rate,))
+            self.process.start()
+            self.pipe_me.recv()
+        else:
+            self.__start__(tracker_addr, proxy, port, upload_rate, download_rate)
 
     def __start__(self, tracker_addr: Tuple[str, int], proxy, port, upload_rate, download_rate):
-        print(f"Peer Process started, name {self.process.name}")
         if proxy:
             self.proxy = proxy
         else:
             self.proxy = Proxy(upload_rate, download_rate, port)  # Do not modify this line!
         # school codes
         self.my_addr: IPPort = ('127.0.0.1', self.proxy.port)
-        self.process.name = f"Peer: {self.proxy.port}"
+        if self.use_mp:
+            print(f"Peer Process started, name {self.process.name}")
+            self.process.name = f"Peer: {self.proxy.port}"
         self.mtu = 65500
         self.tracker_addr = tracker_addr
         self.peerController = controller.PeerController(self.proxy, self.my_addr, self.tracker_addr)
         self.peerController.socket.mtu = self.mtu
         self.peerController.notify_tracker()
+        if not self.use_mp:
+            return
         self.pipe_mp.send(123123)
         while True:
             (ev_type, data) = self.pipe_mp.recv()
@@ -51,7 +58,7 @@ class PClient:
                 self.__cancel__(data)
                 self.pipe_mp.send(None)
             elif ev_type == PClient.EV_CLOSE:
-                self.peerController.close()
+                self.__close__()
                 self.pipe_mp.send(None)
                 break
 
@@ -75,22 +82,37 @@ class PClient:
     def __cancel__(self, fid):
         self.peerController.stop_torrent(fid)
 
+    def __close__(self):
+        self.peerController.close()
+
     def register(self, file_path: str) -> str:
         if not os.path.exists(save_dir):
             os.mkdir(save_dir)
-        self.pipe_me.send((PClient.EV_REGISTER, file_path))
-        return self.pipe_me.recv()  # read fid back
+        if self.use_mp:
+            self.pipe_me.send((PClient.EV_REGISTER, file_path))
+            return self.pipe_me.recv()  # read fid back
+        else:
+            return self.__register__(file_path)
 
     def download(self, fid) -> bytes:
         if not os.path.exists(save_dir):
             os.mkdir(save_dir)
-        self.pipe_me.send((PClient.EV_DOWNLOAD, fid))
-        return self.pipe_me.recv()  # read binary back
+        if self.use_mp:
+            self.pipe_me.send((PClient.EV_DOWNLOAD, fid))
+            return self.pipe_me.recv()  # read binary back
+        else:
+            return self.__download__(fid)
 
     def cancel(self, fid):
-        self.pipe_me.send((PClient.EV_CANCEL, fid))
-        self.pipe_me.recv()  # wait cancel
+        if self.use_mp:
+            self.pipe_me.send((PClient.EV_CANCEL, fid))
+            self.pipe_me.recv()  # wait cancel
+        else:
+            return self.__cancel__(fid)
 
     def close(self):
-        self.pipe_me.send((PClient.EV_CLOSE, None))
-        self.pipe_me.recv()  # wait close
+        if self.use_mp:
+            self.pipe_me.send((PClient.EV_CLOSE, None))
+            self.pipe_me.recv()  # wait close
+        else:
+            return self.__close__()
