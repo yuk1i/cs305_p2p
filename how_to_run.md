@@ -23,3 +23,7 @@ Python 3.10.1
 
 1. Click the green Run button when opening the ComplexTest file.
 2. Edit the Run Configuration, change the working directory to the root of this project.
+
+## How to Run Tracker
+
+`python3 Tracker.py`
