@@ -1,4 +1,5 @@
 import random
+import threading
 import time
 from typing import Set
 
@@ -28,17 +29,20 @@ class RemoteChunkInfo:
         self.pending = False
         self.slow_mode = slow_mode
         self.UPDATE_INTERVAL = 10
+        self.lock = threading.RLock()
         if self.slow_mode:
             self.UPDATE_INTERVAL = 20
 
     def update(self, chunk_info: Set[int]):
-        self.chunks.update(chunk_info)
-        self.last_update = utils.bytes_utils.current_time_ms() + random.randint(0, 1000)
-        self.pending = False
+        with self.lock:
+            self.chunks.update(chunk_info)
+            self.last_update = utils.bytes_utils.current_time_ms() + random.randint(0, 1000)
+            self.pending = False
 
     def remove(self, element):
-        if element in self.chunks:
-            self.chunks.remove(element)
+        with self.lock:
+            if element in self.chunks:
+                self.chunks.remove(element)
 
     def should_update(self, percentage):
         if percentage > 40:

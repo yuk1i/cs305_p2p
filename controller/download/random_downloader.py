@@ -18,6 +18,10 @@ class RandomDownloadController(AbstractDownloadController):
         self.peer_sim_numbers_reseter = threading.Timer(10, function=self.reseter)
         self.peer_sim_numbers_reseter.start()
 
+    @property
+    def timeout_ms(self):
+        return self.controller.controller.socket.timeout_ms
+
     def reseter(self):
         for p in self.peer_sim_numbers:
             self.peer_sim_numbers[p] = min(self.MAX_SIMULTANEOUS_REQ, self.peer_sim_numbers[p] + 1)
@@ -58,6 +62,21 @@ class RandomDownloadController(AbstractDownloadController):
         peers = list(self.peer_list)
         random.shuffle(peers)
         tasks = list()
+        # check timeouts
+        current = current_time_ms()
+        for k in self.timeouting_blocks.keys():
+            # k: chunk seq
+            if current - self.timeouting_blocks[k] > self.timeout_ms + 2500:
+                print(f"[RD] !!!!!!! Chunk {k} TIMEOUT IN Random Downloader !!!!!!")
+                p = None  # IPPort
+                for pp in self.pending_peer:
+                    if k in self.pending_peer[pp]:
+                        p = pp
+                        break
+                if p:
+                    self.pending_peer[p].remove(k)
+                self.pending_blocks.remove(k)
+                del self.timeouting_blocks[k]
         for peer in peers:
             if peer not in self.pending_peer:
                 self.on_new_peer(peer)
@@ -78,6 +97,7 @@ class RandomDownloadController(AbstractDownloadController):
                 wants.append(want_chunk_id)
                 self.pending_blocks.add(want_chunk_id)
                 self.pending_peer[peer].add(want_chunk_id)
+                self.timeouting_blocks[want_chunk_id] = current_time_ms()
             tasks.append((peer, wants))
         if tasks:
             print(tasks)
