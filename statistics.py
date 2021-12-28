@@ -2,7 +2,7 @@ import json
 import queue
 import threading
 from typing import List, Dict, Set, Tuple
-from wsgiref.simple_server import make_server
+from wsgiref.simple_server import make_server, WSGIRequestHandler
 from wsgiref.util import application_uri, request_uri
 
 import controller
@@ -26,6 +26,12 @@ def get_speed_str(speed):
     return "{:.2f}".format(speed / 1000)
 
 
+class NoLoggingWSGIRequestHandler(WSGIRequestHandler):
+
+    def log_message(self, format, *args):
+        pass
+
+
 class Statistics:
 
     def __init__(self):
@@ -45,7 +51,7 @@ class Statistics:
     def start(self):
         if self.http_thread.is_alive():
             return
-        self.httpd = make_server("127.0.0.1", 58080, self.__http_server__)
+        self.httpd = make_server("127.0.0.1", 58080, self.__http_server__, handler_class=NoLoggingWSGIRequestHandler)
         self.http_thread.start()
         input("Statistics On, visit http://localhost:58080/ and press any key to continue.")
 
