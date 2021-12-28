@@ -44,7 +44,7 @@ class P2PConn(Conn):
                     print("ERROR!!!!!! WHY state is None!!!!!!")
                     state = ('1')
                 torrent_hash: str = state[0]
-                success = False
+                return_status = controller.torrent_controller.PEER_RSPD_SUCCEED
                 if torrent_hash in self.controller.active_torrents:
                     tc = self.controller.active_torrents[torrent_hash]
                     if pkt.status == STATUS_OK:
@@ -55,15 +55,18 @@ class P2PConn(Conn):
                             tc.dir_controller.save_block(pkt.chunk_seq_id, pkt.data)
                             statistics.get_instance().on_peer_new_chunk(self.controller.local_addr[1], pkt.chunk_seq_id,
                                                                         self.remote_addr[1])
-                            success = True
                         else:
                             print("chunk hash failed for id %s" % pkt.chunk_seq_id)
+                            return_status = controller.torrent_controller.PEER_RSPD_FAILED
                     elif pkt.status == STATUS_NOT_READY:
                         tc.peer_chunk_info[self.remote_addr].remove(pkt.chunk_seq_id)
                         print("[CP2P, {}] Remote {} declares not ready for part {}".format(self.controller.local_addr,
                                                                                            self.remote_addr,
                                                                                            pkt.chunk_seq_id))
-                    tc.on_peer_respond_chunk_req(self.remote_addr, success, pkt.chunk_seq_id)
+                        return_status = controller.torrent_controller.PEER_RSPD_FAILED
+                    elif pkt.status == STATUS_NOT_ENOUGH_UPLOAD:
+                        return_status = controller.torrent_controller.PEER_RSPD_NO_UPLOAD_BANDWITH
+                    tc.on_peer_respond_chunk_req(self.remote_addr, return_status, pkt.chunk_seq_id)
             self.notify_lock(req_type)
         else:
             # Request
@@ -134,6 +137,11 @@ class P2PConn(Conn):
                 tc = self.controller.active_torrents[str_hash]
                 if self.remote_addr not in tc.peer_list:
                     tc.on_new_income_peer(self.remote_addr)
+                if tc.slow_mode and self.controller.socket.traffic_monitor.get_uplink_rate() >= self.controller.socket.proxy.upload_rate * 0.97:
+                    ack.status = STATUS_NOT_ENOUGH_UPLOAD
+                    print(f"[CP2P, {self.controller.local_addr}] Not Enough Bandwidth for {self.remote_addr}")
+                    self.send_packet(ack)
+                    return
                 if tc.upload_mode == controller.MODE_DONT_REPEAT:
                     if pkt.chunk_seq_id in tc.uploaded:
                         print("[CP2P, {}] Bdata Not Ready for {}, from {}, since uploaded already".format(

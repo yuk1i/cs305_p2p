@@ -24,7 +24,7 @@ class Conn:
     Manage a connection
     """
 
-    def __init__(self, remote_addr: IPPort, ctrl: controller.Controller, timeout_ms=5000):
+    def __init__(self, remote_addr: IPPort, ctrl: controller.Controller):
         self.remote_addr: IPPort = remote_addr
         self.traffic_monitor: ConnectionTrafficMonitor = ConnectionTrafficMonitor()
         self.controller: controller.Controller = ctrl
@@ -37,7 +37,6 @@ class Conn:
         self.waiter: Dict[int, threading.Condition] = dict()
         self.lock = threading.RLock()
         self.pending_packet: Dict[int, Tuple[int, int]] = dict()
-        self.timeout_ms = timeout_ms
         # Pending packets, key: identifier, value: (itype, send_time) in ms
         self.controller.socket.register(remote_addr, self)
         pass
@@ -132,7 +131,7 @@ class Conn:
         cur = current_time_ms()
         for identi in list(self.pending_packet.keys()):
             itype, send_time = self.pending_packet[identi]
-            if cur - send_time >= self.timeout_ms:
+            if cur - send_time >= self.controller.socket.timeout_ms:
                 state = self.saved_states[identi] if identi in self.saved_states else None
                 self.__on_timeout__(itype, identi, state)
                 del self.pending_packet[identi]

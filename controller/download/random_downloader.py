@@ -19,8 +19,8 @@ class RandomDownloadController(AbstractDownloadController):
         self.peer_sim_numbers_reseter.start()
 
     def reseter(self):
-        for p in self.peer_list:
-            self.peer_sim_numbers[p] = self.MAX_SIMULTANEOUS_REQ
+        for p in self.peer_sim_numbers:
+            self.peer_sim_numbers[p] = min(self.MAX_SIMULTANEOUS_REQ, self.peer_sim_numbers[p] + 1)
 
     def on_peer_respond_succeed(self, peer_addr: IPPort, chunk_seq_id: int):
         print(f"[ALG] block {chunk_seq_id} success from {peer_addr}")
@@ -44,13 +44,13 @@ class RandomDownloadController(AbstractDownloadController):
 
     def on_peer_timeout(self, peer_addr: IPPort, chunk_seq_id: int):
         print(f"[ALG] block {chunk_seq_id} timeout from {peer_addr}")
-        self.peer_sim_numbers[peer_addr] = self.MAX_SIMULTANEOUS_REQ - 1
-        self.on_peer_respond_failed(peer_addr, chunk_seq_id)
-        # self.pending_peer[peer_addr].remove(chunk_seq_id)
-        # self.timeouting_blocks[chunk_seq_id] = current_time_ms()
-        # self.pending_blocks.remove(chunk_seq_id)
-        # Don't remove them from pending_blocks
-        # lower down peer_addr's level? but should be done in random alg
+        self.peer_sim_numbers[peer_addr] = 1
+        if chunk_seq_id in self.timeouting_blocks:
+            del self.timeouting_blocks[chunk_seq_id]
+        if chunk_seq_id in self.pending_peer[peer_addr]:
+            self.pending_peer[peer_addr].remove(chunk_seq_id)
+        if chunk_seq_id in self.pending_blocks:
+            self.pending_blocks.remove(chunk_seq_id)
 
     def get_next_download_task(self) -> List[Tuple[IPPort, List[int]]]:
         wanted = set(range(1, 1 + self.controller.dir_controller.torrent_block_count)) \

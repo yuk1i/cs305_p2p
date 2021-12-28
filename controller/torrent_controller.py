@@ -22,6 +22,11 @@ EV_CHOKE_STATUS_CHANGE = 4
 MODE_DONT_REPEAT = 1
 MODE_FULL = 0
 
+PEER_RSPD_SUCCEED = 0x01
+PEER_RSPD_FAILED = 0x02
+PEER_RSPD_NO_UPLOAD_BANDWITH = 0x03
+
+
 
 class TorrentController:
     def __init__(self, torrent: Torrent, ctrl: controller.PeerController,
@@ -54,8 +59,17 @@ class TorrentController:
             self.dir_controller = controller.DirectoryController(torrent, torrent_file_path, save_dir)
         if not self.torrent.dummy:
             self.dir_controller.check_all_hash()
-        self.upload_mode = MODE_FULL
+        self.slow_mode = self.controller.socket.proxy.upload_rate <= 10000 and not self.torrent.dummy
+        if self.slow_mode:
+            self.upload_mode = MODE_DONT_REPEAT
+        else:
+            self.upload_mode = MODE_FULL
         self.uploaded = set()
+        if self.torrent.dummy and self.controller.socket.proxy.upload_rate <= 60000:
+            self.slow_mode = True
+        if self.slow_mode:
+            self.controller.socket.timeout_ms *= 2.5
+            self.download_controller.MAX_SIMULTANEOUS_REQ = 1
         # if self.
 
     def __run__(self):
@@ -70,7 +84,7 @@ class TorrentController:
         self.status = controller.TorrentStatus.TORRENT_STATUS_METADATA
         for peer in self.peer_list:
             self.controller.create_peer_conn(peer)
-            self.peer_chunk_info[peer] = controller.RemoteChunkInfo()
+            self.peer_chunk_info[peer] = controller.RemoteChunkInfo(self.slow_mode)
         # Then, Request chunks for torrent files, download them, try to decode torrent files
         # If decoded successfully, save torrent file,
         #       create directory structure
@@ -129,10 +143,11 @@ class TorrentController:
                     pass
                     # ignored, do in async
                 elif ev_type == EV_PEER_RESPOND:
-                    (peer_addr, succeed, chunk_seq_id) = data
-                    if succeed:
+                    (peer_addr, status, chunk_seq_id) = data
+                    if status == PEER_RSPD_SUCCEED:
                         self.download_controller.on_peer_respond_succeed(peer_addr, chunk_seq_id)
-
+                    elif status == PEER_RSPD_NO_UPLOAD_BANDWITH:
+                        self.download_controller.on_peer_timeout(peer_addr, chunk_seq_id)
                     else:
                         self.download_controller.on_peer_respond_failed(peer_addr, chunk_seq_id)
                 elif ev_type == EV_CHUNK_TIMEOUT:
@@ -144,7 +159,8 @@ class TorrentController:
             if not self.events.empty():
                 continue
             if timeout:
-                self.update_peers_chunks(len(self.dir_controller.get_local_blocks()) / self.dir_controller.torrent_block_count * 100)
+                self.update_peers_chunks(
+                    len(self.dir_controller.get_local_blocks()) / self.dir_controller.torrent_block_count * 100)
                 speed: Dict[int, Tuple[str, str]] = dict()  # TODO: Use IPPort here
             if self.dir_controller.is_download_completed():
                 continue
@@ -161,14 +177,16 @@ class TorrentController:
     def on_peer_choke_status_change(self, peer: IPPort, status: bool):
         self.events.put_nowait((EV_CHOKE_STATUS_CHANGE, (peer, status)))
 
-    def on_peer_respond_chunk_req(self, peer_addr: IPPort, succeeded: bool, block_id: int):
-        self.events.put_nowait((EV_PEER_RESPOND, (peer_addr, succeeded, block_id)))
+    def on_peer_respond_chunk_req(self, peer_addr: IPPort, status: int, block_id: int):
+        self.events.put_nowait((EV_PEER_RESPOND, (peer_addr, status, block_id)))
 
     def on_chunk_timeout(self, remote_addr, block_seq):
         self.events.put_nowait((EV_CHUNK_TIMEOUT, (remote_addr, block_seq)))
 
     def on_peer_chunk_updated(self, peer: IPPort, chunk_info: Set[int]):
         print("[TC] peer (%s:%s) chunk info updated" % peer)
+        if peer not in self.peer_chunk_info:
+            self.on_new_income_peer(peer)
         self.peer_chunk_info[peer].update(chunk_info)
         pass
 
@@ -193,9 +211,11 @@ class TorrentController:
         :return:
         """
         print("[TC] New Income Peer %s:%s" % remote_addr)
+        if remote_addr in self.peer_list:
+            return
         self.peer_list.append(remote_addr)
         if remote_addr not in self.peer_chunk_info:
-            self.peer_chunk_info[remote_addr] = controller.RemoteChunkInfo()
+            self.peer_chunk_info[remote_addr] = controller.RemoteChunkInfo(self.slow_mode)
         self.download_controller.on_new_peer(remote_addr)
 
     def update_peers_chunks(self, percentage):
@@ -225,6 +245,7 @@ class TorrentController:
 
     def close(self):
         self.events.put_nowait((EV_QUIT, None))
+        statistics.get_instance().on_peer_status_changed(self.controller.local_addr[1], "Closing...")
         if self.thread.is_alive():
             self.thread.join()
         if self.dir_controller:

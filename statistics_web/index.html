@@ -184,7 +184,7 @@
                     if (json["first"]) {
                         $("#container").children("div:not(#peer_demo)").remove();
                         peer_color = {};
-                        colors = all_colors;
+                        colors = [...all_colors];
                     }
                     for (const i in json["new_peer"]) {
                         init_peer(json["new_peer"][i]);

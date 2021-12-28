@@ -28,7 +28,7 @@ class TitfortatDownloadController(AbstractDownloadController):
 
     def reseter(self):
         for p in self.peer_list:
-            self.peer_sim_numbers[p] = self.MAX_SIMULTANEOUS_REQ
+            self.peer_sim_numbers[p] = min(self.MAX_SIMULTANEOUS_REQ, self.peer_sim_numbers[p] + 1)
 
     def on_peer_respond_succeed(self, peer_addr: IPPort, chunk_seq_id: int):
         print(f"[ALG] block {chunk_seq_id} success from {peer_addr}")
@@ -66,7 +66,7 @@ class TitfortatDownloadController(AbstractDownloadController):
 
     def on_peer_timeout(self, peer_addr: IPPort, chunk_seq_id: int):
         print(f"[ALG] block {chunk_seq_id} timeout from {peer_addr}")
-        self.peer_sim_numbers[peer_addr] = self.MAX_SIMULTANEOUS_REQ - 1
+        self.peer_sim_numbers[peer_addr] = 1
         self.on_peer_respond_failed(peer_addr, chunk_seq_id)
         # self.pending_peer[peer_addr].remove(chunk_seq_id)
         # self.timeouting_blocks[chunk_seq_id] = current_time_ms()

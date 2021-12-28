@@ -21,13 +21,15 @@ class TorrentStatus:
 
 
 class RemoteChunkInfo:
-    UPDATE_INTERVAL = 10
-
     # Update Interval for remote peers -> 5s
-    def __init__(self):
+    def __init__(self, slow_mode=False):
         self.last_update: int = 0  # in ms
         self.chunks: Set[int] = set()
         self.pending = False
+        self.slow_mode = slow_mode
+        self.UPDATE_INTERVAL = 10
+        if self.slow_mode:
+            self.UPDATE_INTERVAL = 20
 
     def update(self, chunk_info: Set[int]):
         self.chunks.update(chunk_info)
@@ -41,7 +43,7 @@ class RemoteChunkInfo:
     def should_update(self, percentage):
         if percentage > 40:
             percentage = 100
-        percentage = (percentage*2 / 100)
+        percentage = percentage / 100
         return utils.bytes_utils.current_time_ms() - self.last_update >= self.UPDATE_INTERVAL * \
                percentage * 1000 and not self.pending
 

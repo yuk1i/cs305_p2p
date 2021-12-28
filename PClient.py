@@ -20,7 +20,7 @@ class PClient:
 
     def __init__(self, tracker_addr: Tuple[str, int], proxy=None, port=None, upload_rate=0, download_rate=0, tit_tat=False):
         self.use_mp = False
-        self.tit_tat = tit_tat = True
+        self.tit_tat = tit_tat
         if self.use_mp:
             # For myself: read in pipe_me, write in pipe_me
             # For mp:     read in pipe_mp, write in pipe_mp

@@ -23,7 +23,7 @@ class PeerInfo:
 
 
 def get_speed_str(speed):
-    return "{:.2f}".format(speed / 1024)
+    return "{:.2f}".format(speed / 1000)
 
 
 class Statistics:
