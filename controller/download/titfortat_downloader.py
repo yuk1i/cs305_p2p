@@ -143,7 +143,7 @@ class TitfortatDownloadController(AbstractDownloadController):
     def get_next_download_task(self) -> List[Tuple[IPPort, List[int]]]:
         wanted = set(range(1, 1 + self.controller.dir_controller.torrent_block_count)) \
             .difference(self.controller.dir_controller.get_local_blocks())
-        all_peers = list(self.peer_list)
+        all_peers = list(self.alive_peer_list)
 
         # print("time = ", current_time_ms() - self.last_time)
 

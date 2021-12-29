@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import threading
 from typing import Tuple, Any
 
 import controller
@@ -10,6 +11,9 @@ from utils import IPPort, hexstr_to_bytes, bytes_to_hexstr
 from torrent_local_state import TorrentLocalState
 
 
+CHECK_ALIVE_INTERVAL = 25
+
+
 class P2PConn(Conn):
     """
     A peer to peer Connection
@@ -17,6 +21,10 @@ class P2PConn(Conn):
 
     def __init__(self, peer_addr: IPPort, ctrl: controller.PeerController):
         super(P2PConn, self).__init__(peer_addr, ctrl)
+        self.remote_keep_alive = True
+        self.remote_keep_alive_signal = False
+        self.remote_keep_alive_timer = threading.Timer(interval=CHECK_ALIVE_INTERVAL, function=self.check_alive)
+        self.remote_keep_alive_timer.start()
 
     def __handler__(self, pkt: BasePacket):
         self.controller: controller.PeerController
@@ -29,6 +37,7 @@ class P2PConn(Conn):
                 pkt: ACKRequestForTorrent
                 torrent_hash: str = state
                 if pkt.status == STATUS_OK and torrent_hash in self.controller.active_torrents:
+                    self.remote_keep_alive_signal = True
                     self.controller.active_torrents[torrent_hash]. \
                         on_torrent_chunk_received(pkt.data, pkt.start_at, pkt.length, pkt.total_length)
             elif req_type == TYPE_UPDATE_CHUNK_INFO:
@@ -36,6 +45,7 @@ class P2PConn(Conn):
                 pkt: ACKUpdateChunkInfo
                 torrent_hash: str = state
                 if pkt.status == STATUS_OK and torrent_hash in self.controller.active_torrents:
+                    self.remote_keep_alive_signal = True
                     tc = self.controller.active_torrents[torrent_hash]
                     tc.on_peer_chunk_updated(self.remote_addr, TorrentLocalState.unpack_seq_ids(pkt.packed_seq_ids))
             elif req_type == TYPE_REQUEST_CHUNK:
@@ -49,6 +59,7 @@ class P2PConn(Conn):
                     tc = self.controller.active_torrents[torrent_hash]
                     if pkt.status == STATUS_OK:
                         if tc.dir_controller.check_chunk_hash(pkt.chunk_seq_id, pkt.data):
+                            self.remote_keep_alive_signal = True
                             print(
                                 "[CP2P, {}] Save Block {} from {}".format(self.controller.local_addr, pkt.chunk_seq_id,
                                                                           self.remote_addr))
@@ -174,23 +185,26 @@ class P2PConn(Conn):
             if torrent_hash in self.controller.active_torrents:
                 self.controller.active_torrents[torrent_hash].on_chunk_timeout(self.remote_addr, block_seq)
 
+    def close(self):
+        self.remote_keep_alive_timer.cancel()
+        super(P2PConn, self).close()
+
+    def check_alive(self):
+        print(f'check {self.remote_keep_alive} {self.remote_keep_alive_signal}')
+        if self.active:
+            if self.remote_keep_alive and not self.remote_keep_alive_signal:
+                self.remote_keep_alive = False
+                print(f'peer {self.remote_addr} kept quiet for too long')
+            if not self.remote_keep_alive and self.remote_keep_alive_signal:
+                self.remote_keep_alive = True
+                print(f'peer {self.remote_addr} comes back')
+        self.remote_keep_alive_signal = False
+        self.remote_keep_alive_timer = threading.Timer(interval=25, function=self.check_alive)
+        self.remote_keep_alive_timer.start()
+
     def last_active(self):
         """
         Return time passed after last communication
-        :return:
-        """
-        pass
-
-    def uplink_speed(self) -> int:
-        """
-        Get uplink speed in byte/s
-        :return:
-        """
-        pass
-
-    def downlink_speed(self) -> int:
-        """
-        Get download speed in byte/s
         :return:
         """
         pass

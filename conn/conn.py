@@ -27,6 +27,7 @@ class Conn:
         self.remote_addr: IPPort = remote_addr
         self.traffic_monitor: conn.ConnectionTrafficMonitor = conn.ConnectionTrafficMonitor()
         self.controller: controller.Controller = ctrl
+        self.active = False  # register connection to activate
         self.saved_states: Dict[int, Any] = dict()
         # saved_states is used to save status between send and recv
         self.__recv_queue__ = queue.Queue()
@@ -38,7 +39,7 @@ class Conn:
         self.pending_packet: Dict[int, Tuple[int, int]] = dict()
         # Pending packets, key: identifier, value: (itype, send_time) in ms
         self.controller.socket.register(remote_addr, self)
-        pass
+
 
     def close(self):
         self.controller.socket.unregister(self.remote_addr)

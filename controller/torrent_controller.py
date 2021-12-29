@@ -27,7 +27,6 @@ PEER_RSPD_FAILED = 0x02
 PEER_RSPD_NO_UPLOAD_BANDWITH = 0x03
 
 
-
 class TorrentController:
     def __init__(self, torrent: Torrent, ctrl: controller.PeerController,
                  save_dir: str, torrent_file_path: str, use_tit_for_tat: False):
@@ -45,6 +44,7 @@ class TorrentController:
         # self.chunk_status: List[bool] = list()
         self.peer_list: List[IPPort] = list()
         self.peer_chunk_info: Dict[IPPort, controller.RemoteChunkInfo] = dict()
+        self.download_controller: controller.download.AbstractDownloadController
         if use_tit_for_tat:
             self.download_controller = controller.download.TitfortatDownloadController(self)
         else:
@@ -73,6 +73,13 @@ class TorrentController:
             print(f"[TC{self.controller.local_addr}] Enter SLOW MODE!!!!")
         # if self.
 
+    @property
+    def alive_peer_list(self) -> List[IPPort]:
+        return list(filter(lambda addr: self.is_peer_alive(addr), self.peer_list))
+
+    def is_peer_alive(self, addr: IPPort) -> bool:
+        return self.controller.get_peer_conn(addr).active
+
     def __run__(self):
         statistics.get_instance().on_peer_status_changed(self.controller.local_addr[1], "Downloading Metadata")
         # Request peers first
@@ -95,11 +102,11 @@ class TorrentController:
         while self.torrent.dummy:
             print("start downloading")
             # Download torrent files from peers
-            if len(tested_peers) == len(self.peer_list):
+            if len(tested_peers) == len(self.alive_peer_list):
                 self.controller.retrieve_peer_list(self.torrent_hash)
                 tested_peers.clear()
                 continue
-            peer_addr = random.choice(list(set(self.peer_list).difference(tested_peers)))
+            peer_addr = random.choice(list(set(self.alive_peer_list).difference(tested_peers)))
             tested_peers.add(peer_addr)
             p2p_conn = self.controller.get_peer_conn(peer_addr)
             # TODO: Improvements here
@@ -227,7 +234,8 @@ class TorrentController:
         # Update Chunk Info
         my_block = self.dir_controller.get_local_blocks().copy()
         for peer_addr in self.peer_list:
-            if self.peer_chunk_info[peer_addr].should_update(percentage):
+            if self.is_peer_alive(peer_addr) \
+                    and self.peer_chunk_info[peer_addr].should_update(percentage):
                 self.peer_chunk_info[peer_addr].mark_pending()
                 p2p_conn = self.controller.get_peer_conn(peer_addr)
                 p2p_conn.async_update_chunk_info(self.torrent_hash, my_block)

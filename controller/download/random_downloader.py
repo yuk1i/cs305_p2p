@@ -25,6 +25,8 @@ class RandomDownloadController(AbstractDownloadController):
     def reseter(self):
         for p in self.peer_sim_numbers:
             self.peer_sim_numbers[p] = min(self.MAX_SIMULTANEOUS_REQ, self.peer_sim_numbers[p] + 1)
+        self.peer_sim_numbers_reseter = threading.Timer(10, function=self.reseter)
+        self.peer_sim_numbers_reseter.start()
 
     def on_peer_respond_succeed(self, peer_addr: IPPort, chunk_seq_id: int):
         print(f"[ALG] block {chunk_seq_id} success from {peer_addr}")
@@ -59,7 +61,7 @@ class RandomDownloadController(AbstractDownloadController):
     def get_next_download_task(self) -> List[Tuple[IPPort, List[int]]]:
         wanted = set(range(1, 1 + self.controller.dir_controller.torrent_block_count)) \
             .difference(self.controller.dir_controller.get_local_blocks())
-        peers = list(self.peer_list)
+        peers = list(self.alive_peer_list)
         random.shuffle(peers)
         tasks = list()
         # check timeouts

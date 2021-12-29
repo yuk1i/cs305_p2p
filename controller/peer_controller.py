@@ -75,10 +75,9 @@ class PeerController(controller.Controller):
 
     def keep_alive(self):
         while self.active:
-            while self.tracker_status == controller.TrackerStatus.NOTIFIED:
+            while self.active and self.tracker_status == controller.TrackerStatus.NOTIFIED:
                 self.keep_alive_timer = threading.Timer(interval=25, function=self.tracker_conn.notify,
                                                         args=(self.local_addr,))
-                # self.keep_alive_timer.daemon = True
                 self.keep_alive_timer.start()
                 self.keep_alive_timer.join()
 

@@ -15,6 +15,10 @@ class AbstractDownloadController:
         return self.controller.peer_list
 
     @property
+    def alive_peer_list(self):
+        return self.controller.alive_peer_list
+
+    @property
     def peer_chunk_info(self):
         return self.controller.peer_chunk_info
 

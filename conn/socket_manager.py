@@ -19,6 +19,7 @@ class SocketManager:
     def __init__(self, pxy: Proxy.Proxy, ctrl: controller.Controller):
         self.proxy = pxy
         self.controller = ctrl
+        self.active = True
         self.mapper: Dict[IPPort, conn.Conn] = dict()
         self.traffic_monitor: conn.SockManTrafficMonitor = conn.SockManTrafficMonitor(self)
         self.mtu = 1460
@@ -71,9 +72,11 @@ class SocketManager:
             return
         con.socket = self
         self.mapper[addr] = con
+        con.active = True
 
     def unregister(self, addr: IPPort):
         if addr in self.mapper.keys():
+            self.mapper[addr].active = False
             del self.mapper[addr]
 
     def on_pkt_recv(self, src_addr: IPPort, pkt: BasePacket):
@@ -95,6 +98,7 @@ class SocketManager:
             peer.recv_packet(pkt)
 
     def close(self):
+        self.active = False
         for remote_addr in self.mapper:
             self.mapper[remote_addr].close()
         self.mapper.clear()
