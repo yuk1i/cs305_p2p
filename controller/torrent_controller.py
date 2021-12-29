@@ -59,16 +59,15 @@ class TorrentController:
             self.dir_controller = controller.DirectoryController(torrent, torrent_file_path, save_dir)
         if not self.torrent.dummy:
             self.dir_controller.check_all_hash()
-        self.slow_mode = self.controller.socket.proxy.upload_rate <= 10000 and not self.torrent.dummy
+        self.upload_mode = MODE_FULL
+        self.slow_mode = False
+        if not self.torrent.dummy and self.controller.socket.proxy.upload_rate <= 10000:
+            self.slow_mode = True
+            self.upload_mode = MODE_DONT_REPEAT
         if self.torrent.dummy and self.controller.socket.proxy.upload_rate <= 40000:
             self.slow_mode = True
         if self.slow_mode:
             self.controller.socket.timeout_ms *= 2.5
-            self.download_controller.MAX_SIMULTANEOUS_REQ = 1
-        if self.slow_mode:
-            self.upload_mode = MODE_DONT_REPEAT
-        else:
-            self.upload_mode = MODE_FULL
         self.uploaded = set()
         if self.slow_mode:
             print(f"[TC{self.controller.local_addr}] Enter SLOW MODE!!!!")
