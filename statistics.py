@@ -6,6 +6,7 @@ from wsgiref.simple_server import make_server, WSGIRequestHandler
 from wsgiref.util import application_uri, request_uri
 
 import controller
+from config import is_cs305_testing
 
 
 class PeerInfo:
@@ -53,7 +54,10 @@ class Statistics:
             return
         self.httpd = make_server("127.0.0.1", 58080, self.__http_server__, handler_class=NoLoggingWSGIRequestHandler)
         self.http_thread.start()
-        input("Statistics On, visit http://localhost:58080/ and press any key to continue.")
+        if not is_cs305_testing:
+            input("Statistics On, visit http://localhost:58080/ and press any key to continue.")
+        else:
+            print("Statistics On, visit http://localhost:58080/ and press any key to continue.")
 
     def __http_server__(self, env, http_stuff):
         if "data" not in request_uri(env, include_query=False):
