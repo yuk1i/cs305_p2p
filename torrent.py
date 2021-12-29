@@ -89,7 +89,7 @@ class Torrent(MyDict):
 
     @property
     def binary(self) -> bytes:
-        if self.__dummy__:
+        if self.dummy:
             raise Exception("not download yet")
         if not self.__binary__:
             self.__json_str__ = json.dumps(self, sort_keys=True)

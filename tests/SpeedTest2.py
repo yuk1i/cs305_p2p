@@ -4,8 +4,6 @@ import time
 from threading import Thread
 
 from PClient import PClient
-from SC_model.client import Client
-from SC_model.server import Server
 
 tracker_address = ("127.0.0.1", 10086)
 
