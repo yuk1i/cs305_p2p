@@ -249,6 +249,7 @@ class TorrentController:
         statistics.get_instance().on_peer_status_changed(self.controller.local_addr[1], "Closing...")
         if self.thread.is_alive():
             self.thread.join()
+        self.download_controller.close()
         if self.dir_controller:
             self.dir_controller.close()
         statistics.get_instance().on_peer_status_changed(self.controller.local_addr[1], "Closed")
