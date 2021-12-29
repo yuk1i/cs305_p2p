@@ -11,7 +11,6 @@ import packet.deserializer
 import conn
 import Proxy
 from packet.base_packet import BasePacket, FLAG_REASSEMBLE, MASK_REVERSED
-from .traffic_monitor import SockManTrafficMonitor
 
 from utils import bytes_utils, IPPort
 
@@ -21,7 +20,7 @@ class SocketManager:
         self.proxy = pxy
         self.controller = ctrl
         self.mapper: Dict[IPPort, conn.Conn] = dict()
-        self.traffic_monitor: SockManTrafficMonitor = SockManTrafficMonitor(self)
+        self.traffic_monitor: conn.SockManTrafficMonitor = conn.SockManTrafficMonitor(self)
         self.mtu = 1460
         self.timeout_ms = 5000
         # self.peers: List[ConnManager] = list()

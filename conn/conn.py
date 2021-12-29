@@ -7,7 +7,7 @@ import threading
 import queue
 
 import controller
-from .traffic_monitor import ConnectionTrafficMonitor
+import conn
 from packet.base_packet import BasePacket, TYPE_ACK
 
 from utils import IPPort
@@ -26,7 +26,7 @@ class Conn:
 
     def __init__(self, remote_addr: IPPort, ctrl: controller.Controller):
         self.remote_addr: IPPort = remote_addr
-        self.traffic_monitor: ConnectionTrafficMonitor = ConnectionTrafficMonitor()
+        self.traffic_monitor: conn.ConnectionTrafficMonitor = conn.ConnectionTrafficMonitor()
         self.controller: controller.Controller = ctrl
         self.saved_states: Dict[int, Any] = dict()
         # saved_states is used to save status between send and recv
