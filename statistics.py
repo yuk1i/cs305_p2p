@@ -21,6 +21,7 @@ class PeerInfo:
         self.status_updated = False
 
         self.peer_status: Dict[int, str] = dict()
+        self.peer_status2: Dict[int, str] = dict()
 
 
 def get_speed_str(speed):
@@ -63,7 +64,7 @@ class Statistics:
         if "data" not in request_uri(env, include_query=False):
             print(f"Requesting {request_uri(env, include_query=False)}")
             http_stuff('200 OK', [('Content-type', 'text/html')])
-            with open("statistics_web/index.html", "rb") as f:
+            with open("../../statistics_web/index.html", "rb") as f:
                 b = f.read()
                 return [b]
         with self.lock:
@@ -118,7 +119,10 @@ class Statistics:
                     pd[pp_port]["download"] = get_speed_str(ppc.traffic_monitor.get_downlink_rate())
                     if pp_port not in pinfo.peer_status:
                         pinfo.peer_status[pp_port] = "N"
-                    pd[pp_port]["status"] = pinfo.peer_status[pp_port]
+                    if pp_port not in pinfo.peer_status2:
+                        pinfo.peer_status2[pp_port] = "N"
+                    pd[pp_port]["status1"] = pinfo.peer_status[pp_port]
+                    pd[pp_port]["status2"] = pinfo.peer_status2[pp_port]
                 speeds[p]["peers"] = pd
             ret["speed"] = speeds
 
@@ -159,6 +163,10 @@ class Statistics:
     def set_peer_status(self, peer_port, target_peer_port, str_status):
         with self.lock:
             self.peer_list[peer_port].peer_status[target_peer_port] = str_status
+
+    def set_peer_status2(self, peer_port, target_peer_port, str_status):
+        with self.lock:
+            self.peer_list[peer_port].peer_status2[target_peer_port] = str_status
 
 
 global_statistics = Statistics()

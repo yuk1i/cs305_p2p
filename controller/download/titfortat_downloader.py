@@ -55,11 +55,11 @@ class TitfortatDownloadController(AbstractDownloadController):
         log: str = ("before " + str(self.choked_by_peers)) + '\n'
         if choke_status:
             self.choked_by_peers.add(peer)
-            statistics.get_instance().set_peer_status(self.controller.controller.local_addr[1], peer[1], "Choked")
+            statistics.get_instance().set_peer_status2(self.controller.controller.local_addr[1], peer[1], "Choking")
         else:
             if peer in self.choked_by_peers:
                 self.choked_by_peers.remove(peer)
-            statistics.get_instance().set_peer_status(self.controller.controller.local_addr[1], peer[1], "Unchoked")
+            statistics.get_instance().set_peer_status2(self.controller.controller.local_addr[1], peer[1], "Unchoking")
 
         log += ("after " + str(self.choked_by_peers)) + '\n'
         self._log("choked by peers updating ", log)
