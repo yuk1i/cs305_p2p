@@ -3,6 +3,8 @@
 
 # Python Version: 3.10, Please don't use any older version
 
+zh update: tested and passed on windows10, python 3.9 also
+
 ```
 > python3 --version
 Python 3.10.1
@@ -10,20 +12,20 @@ Python 3.10.1
 
 ## How to Run in CommandLine
 
-1. Put test files into "./tests/test_files"
-2. Use the project root path as the working directory
-3. Use `PYTHONPATH=$(pwd) python3 tests/ComplexTest.py` to start one test
-4. Your command line should look like this:
+1. Put test files into `test_files`
+2. Use path `test` as the working directory
+3. Launch tracker first, see [How to Run Tracker](#how-to-run-tracker).
+4. Run `python3 the_test.py` to start one test
+5. Your command line should look like this:
+   
+    `yuk1@~/Desktop/cs305_p2p/test ➜ python3 ComplexTest.py`
 
-    `yuk1@~/Desktop/cs305_p2p ➜ PYTHONPATH=$(pwd) python3 tests/ComplexTest.py`
-
-5. Only this method is tested in command line.
+6. Only this method is tested in command line.
 
 ## How to Run in PyCharm
 
-1. Click the green Run button when opening the ComplexTest file.
-2. Edit the Run Configuration, change the working directory to the root of this project.
+1. Simply click the green Run button, the working directory is set to be where the script is by default.
 
 ## How to Run Tracker
 
-`python3 Tracker.py`
+1. Run `python3 Tracker.py` in project root directory.
