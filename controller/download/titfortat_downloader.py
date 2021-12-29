@@ -189,6 +189,9 @@ class TitfortatDownloadController(AbstractDownloadController):
     def on_new_peer(self, peer_addr: IPPort):
         self.pending_peer[peer_addr] = set()
         self.peer_sim_numbers[peer_addr] = self.MAX_SIMULTANEOUS_REQ
+        self.unchoking_peers.add(peer_addr)
+        statistics.get_instance().set_peer_status(self.controller.controller.local_addr[1], peer_addr[1], "Unchoked")
+        statistics.get_instance().set_peer_status2(self.controller.controller.local_addr[1], peer_addr[1], "Unchoking")
 
     def close(self):
         self.peer_sim_numbers_reseter.cancel()
