@@ -22,7 +22,7 @@ class P2PConn(Conn):
         self.controller: controller.PeerController
         # TODO: Handle requests and replies here
         if pkt.type == TYPE_ACK:
-            req_type = pkt.reversed & MASK_REVERSED
+            req_type = pkt.reserved & MASK_RESERVED
             state = self.retrieve_state(pkt.identifier)
             if req_type == TYPE_REQUEST_TORRENT:
                 print("[CP2P, {}] Torrent data available, from {}".format(self.controller.local_addr, self.remote_addr))

@@ -78,7 +78,7 @@ class MyTestCase(unittest.TestCase):
         bs = ass.boxing()
         total_data = ""
         shuffle(bs)
-        ra = ReAssembler(bs[0][0], bs[0][1] & MASK_REVERSED)
+        ra = ReAssembler(bs[0][0], bs[0][1] & MASK_RESERVED)
         print(total_data)
         print()
         print()

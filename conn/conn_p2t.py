@@ -17,7 +17,7 @@ class PeerToTrackerConn(conn.Conn):
     def __handler__(self, pkt: BasePacket):
         self.controller: controller.PeerController
         if pkt.type == TYPE_ACK:
-            req_type = pkt.reversed & MASK_REVERSED
+            req_type = pkt.reserved & MASK_RESERVED
             state = self.retrieve_state(pkt.identifier)
             if req_type == TYPE_NOTIFY:
                 pkt: ACKNotifyPacket

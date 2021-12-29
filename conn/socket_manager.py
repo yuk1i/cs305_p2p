@@ -10,7 +10,7 @@ import packet.deserializer
 
 import conn
 import Proxy
-from packet.base_packet import BasePacket, FLAG_REASSEMBLE, MASK_REVERSED
+from packet.base_packet import BasePacket, FLAG_REASSEMBLE, MASK_RESERVED
 
 from utils import bytes_utils, IPPort
 
@@ -83,7 +83,7 @@ class SocketManager:
             identifier: int = bytes_utils.bytes_to_int(pkt.__data__[2:2 + 2])
             if identifier not in self.reassemblers.keys():
                 ptype = pkt.__data__[0]
-                rev = pkt.__data__[1] & MASK_REVERSED
+                rev = pkt.__data__[1] & MASK_RESERVED
                 self.reassemblers[identifier] = conn.ReAssembler(ptype, rev)
             reass = self.reassemblers[identifier]
             if reass.assemble(pkt):

@@ -15,7 +15,7 @@ TYPE_SET_CHOKE_STATUS = 0x41
 
 FLAG_REASSEMBLE = 0x80
 FLAG_SPEED_CONTROL = 0x40
-MASK_REVERSED = 0x3F
+MASK_RESERVED = 0x3F
 
 STATUS_NOT_SET = 0x00
 STATUS_OK = 0x01
@@ -56,7 +56,7 @@ class BasePacket(Serializable):
 
     def __init__(self, itype: int):
         self.type: int = itype
-        self.reversed: int = 0
+        self.reserved: int = 0
         self.identifier: int = 0
         self.reassemble: ReAssembleHeader = NO_REASSEMBLE
         self.__reader__ = None
@@ -91,7 +91,7 @@ class BasePacket(Serializable):
         reader = self.get_reader()
         reader.skip(1)
         rev = reader.read_byte()  # The second byte
-        self.reversed = rev & MASK_REVERSED
+        self.reserved = rev & MASK_RESERVED
         self.identifier = reader.read_short()
         if rev & FLAG_REASSEMBLE == FLAG_REASSEMBLE:
             # ReAssemble Enabled
@@ -103,12 +103,12 @@ class BasePacket(Serializable):
 
     def pack_header(self) -> ByteWriter:
         """
-        pack the header, containing Type, Reversed, and Identifier
+        pack the header, containing Type, Reserved, and Identifier
         and Reassemble Header if needed
         """
         writer = self.get_writer()
         writer.write_byte(self.type)
-        writer.write_byte(self.reversed & MASK_REVERSED)
+        writer.write_byte(self.reserved & MASK_RESERVED)
         writer.write_short(self.identifier)
         if self.reassemble.enabled:
             writer.data[1] = writer.data[1] | FLAG_REASSEMBLE
@@ -141,5 +141,5 @@ class ACKPacket(BasePacket):
         super(ACKPacket, self).__init__(TYPE_ACK)
 
     def set_request(self, req: BasePacket):
-        self.reversed = self.reversed | (req.type & MASK_REVERSED)
+        self.reserved = self.reserved | (req.type & MASK_RESERVED)
         self.identifier = req.identifier

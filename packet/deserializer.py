@@ -44,5 +44,5 @@ def get_packet_by_type(itype: int, reserved: int = 0) -> BasePacket:
 
 def deserialize_packet(data: bytes) -> BasePacket:
     itype = data[0]
-    rev = data[1] & MASK_REVERSED
+    rev = data[1] & MASK_RESERVED
     return get_packet_by_type(itype, rev).unpack(data)

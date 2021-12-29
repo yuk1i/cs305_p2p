@@ -17,7 +17,7 @@ class ReAssembler:
 
     def __init__(self, itype: int, rev: int):
         self.type: int = itype
-        self.rev = rev & MASK_REVERSED
+        self.rev = rev & MASK_RESERVED
         self.data = None
         self.done = False
         self.intervals: List[List[int]] = list()
