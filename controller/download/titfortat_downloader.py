@@ -100,7 +100,7 @@ class TitfortatDownloadController(AbstractDownloadController):
         for peer in peers:
             if peer not in self.choked_by_peers:
                 speed: int
-                if peer in self.speed_test[peer] and len(self.speed_test[peer]) > 0:
+                if peer in self.speed_test and len(self.speed_test[peer]) > 0:
                     speed = int(sum(self.speed_test[peer])/len(self.speed_test[peer]))
                     self.speed_test.clear()
                 else:
