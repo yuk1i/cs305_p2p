@@ -25,10 +25,11 @@ if __name__ == '__main__':
     G = PClient(tracker_address, upload_rate=fast, download_rate=fast, tit_tat=tit_tat)
     H = PClient(tracker_address, upload_rate=low, download_rate=fast, tit_tat=tit_tat)
     I = PClient(tracker_address, upload_rate=fast, download_rate=fast, tit_tat=tit_tat)
-    J = PClient(tracker_address, upload_rate=low, download_rate=fast, tit_tat=tit_tat)
-    K = PClient(tracker_address, upload_rate=fast, download_rate=fast, tit_tat=tit_tat)
+    # J = PClient(tracker_address, upload_rate=low, download_rate=fast, tit_tat=tit_tat)
+    # K = PClient(tracker_address, upload_rate=fast, download_rate=fast, tit_tat=tit_tat)
 
-    clients = [B, C, D, E, F, G, H, I, J, K]
+    # clients = [B, C, D, E, F, G, H, I, J, K]
+    clients = [B, C, D, E, F, G, H, I]
     # A register a file and B download it
     fid = A.register("../test_files/bg.png")
     threads = []
@@ -68,6 +69,6 @@ if __name__ == '__main__':
     G.close()
     H.close()
     I.close()
-    J.close()
-    K.close()
+    # J.close()
+    # K.close()
     print((time.time_ns() - time_start) * 1e-9)

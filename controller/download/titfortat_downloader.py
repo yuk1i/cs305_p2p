@@ -16,9 +16,10 @@ class TitfortatDownloadController(AbstractDownloadController):
         self.pending_blocks: Set[int] = set()
         self.pending_peer: Dict[IPPort, Set[int]] = dict()
         self.timeouting_blocks: Dict[int, int] = dict()
-        self.MAX_SIMULTANEOUS_REQ = 2
+        self.MAX_SIMULTANEOUS_REQ = 3
         self.peer_sim_numbers: Dict[IPPort, int] = dict()
         self.peer_sim_numbers_reseter = threading.Timer(10, function=self.reseter)
+        self.peer_sim_numbers_reseter.daemon = True
         self.peer_sim_numbers_reseter.start()
         self.last_time = current_time_ms() + random.randint(-3000, 3000)
         self.times = 0
@@ -29,8 +30,14 @@ class TitfortatDownloadController(AbstractDownloadController):
         self.speed_test:  Dict[IPPort, List[int]] = dict()
 
     def reseter(self):
-        for p in self.peer_list:
-            self.peer_sim_numbers[p] = min(self.MAX_SIMULTANEOUS_REQ, self.peer_sim_numbers[p] + 1)
+        try:
+            for p in self.peer_list:
+                self.peer_sim_numbers[p] = min(self.MAX_SIMULTANEOUS_REQ, self.peer_sim_numbers[p] + 1)
+                self.peer_sim_numbers_reseter = threading.Timer(10, function=self.reseter)
+                self.peer_sim_numbers_reseter.daemon = True
+                self.peer_sim_numbers_reseter.start()
+        except KeyError:
+            pass
 
     def on_peer_respond_succeed(self, peer_addr: IPPort, chunk_seq_id: int):
         print(f"[ALG] block {chunk_seq_id} success from {peer_addr}")

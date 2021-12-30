@@ -15,13 +15,16 @@ def client_download(client):
 if __name__ == '__main__':
     # A, B, C, D, E join the network
     A = PClient(tracker_address, upload_rate=100000, download_rate=100000)
-    B = PClient(tracker_address, upload_rate=100000, download_rate=100000)
-    C = PClient(tracker_address, upload_rate=100000, download_rate=100000)
-    D = PClient(tracker_address, upload_rate=100000, download_rate=100000)
-    E = PClient(tracker_address, upload_rate=100000, download_rate=100000)
+    #B = PClient(tracker_address, upload_rate=100000, download_rate=100000)
+    #C = PClient(tracker_address, upload_rate=100000, download_rate=100000)
+    #D = PClient(tracker_address, upload_rate=100000, download_rate=100000)
+    #E = PClient(tracker_address, upload_rate=100000, download_rate=100000)
     fid = A.register("../test_files/bg.png")
     files = {}
-    clients = [B, C, D, E]
+    #clients = [B, C, D, E]
+    clients = []
+    for i in range(4):
+        clients.append(PClient(tracker_address, upload_rate=100000, download_rate=100000))
     threads = []
 
     # function for download and save
@@ -47,11 +50,12 @@ if __name__ == '__main__':
     for c in clients:
         c.close()
 
+    exit(0)
     # SC model
     server = Server(upload_rate=100000, download_rate=1000000, port=10087)
     server.start()
     # the download rate of different clients
-    rates = [100000, 100000, 100000, 100000]
+    rates = [100000]*4
     threads.clear()
 
     for i, rate in enumerate(rates):

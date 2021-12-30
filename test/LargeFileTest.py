@@ -7,7 +7,7 @@ from PClient import PClient
 
 tracker_address = ("127.0.0.1", 10086)
 
-FILE_PATH = "../test_files/5mb"
+FILE_PATH = "../test_files/20mb"
 
 with open(FILE_PATH, "rb") as f:
     bdata = f.read()

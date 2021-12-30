@@ -16,6 +16,7 @@ class RandomDownloadController(AbstractDownloadController):
         self.MAX_SIMULTANEOUS_REQ = 3
         self.peer_sim_numbers: Dict[IPPort, int] = dict()
         self.peer_sim_numbers_reseter = threading.Timer(10, function=self.reseter)
+        self.peer_sim_numbers_reseter.daemon = True
         self.peer_sim_numbers_reseter.start()
 
     @property
@@ -23,10 +24,14 @@ class RandomDownloadController(AbstractDownloadController):
         return self.controller.controller.socket.timeout_ms
 
     def reseter(self):
-        for p in self.peer_sim_numbers:
-            self.peer_sim_numbers[p] = min(self.MAX_SIMULTANEOUS_REQ, self.peer_sim_numbers[p] + 1)
-        self.peer_sim_numbers_reseter = threading.Timer(10, function=self.reseter)
-        self.peer_sim_numbers_reseter.start()
+        try:
+            for p in self.peer_sim_numbers:
+                self.peer_sim_numbers[p] = min(self.MAX_SIMULTANEOUS_REQ, self.peer_sim_numbers[p] + 1)
+            self.peer_sim_numbers_reseter = threading.Timer(10, function=self.reseter)
+            self.peer_sim_numbers_reseter.daemon = True
+            self.peer_sim_numbers_reseter.start()
+        except KeyError:
+            pass
 
     def on_peer_respond_succeed(self, peer_addr: IPPort, chunk_seq_id: int):
         print(f"[ALG] block {chunk_seq_id} success from {peer_addr}")

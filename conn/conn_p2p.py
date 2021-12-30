@@ -24,6 +24,7 @@ class P2PConn(Conn):
         self.remote_keep_alive = True
         self.remote_keep_alive_signal = False
         self.remote_keep_alive_timer = threading.Timer(interval=CHECK_ALIVE_INTERVAL, function=self.check_alive)
+        self.remote_keep_alive_timer.daemon = True
         self.remote_keep_alive_timer.start()
 
     def __handler__(self, pkt: BasePacket):
@@ -201,6 +202,7 @@ class P2PConn(Conn):
                 print(f'peer {self.remote_addr} comes back')
         self.remote_keep_alive_signal = False
         self.remote_keep_alive_timer = threading.Timer(interval=25, function=self.check_alive)
+        self.remote_keep_alive_timer.daemon = True
         self.remote_keep_alive_timer.start()
 
     def last_active(self):
