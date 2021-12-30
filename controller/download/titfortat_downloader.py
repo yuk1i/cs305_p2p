@@ -16,15 +16,17 @@ class TitfortatDownloadController(AbstractDownloadController):
         self.pending_blocks: Set[int] = set()
         self.pending_peer: Dict[IPPort, Set[int]] = dict()
         self.timeouting_blocks: Dict[int, int] = dict()
-        self.MAX_SIMULTANEOUS_REQ = 3
+        self.MAX_SIMULTANEOUS_REQ = 2
         self.peer_sim_numbers: Dict[IPPort, int] = dict()
         self.peer_sim_numbers_reseter = threading.Timer(10, function=self.reseter)
         self.peer_sim_numbers_reseter.start()
-        self.last_time = current_time_ms()
+        self.last_time = current_time_ms() + random.randint(-3000, 3000)
         self.times = 0
         self.unchoking_peers: Set[IPPort] = set()
         self.enable_log = True
         self.choked_by_peers: Set[IPPort] = set()
+        self.stamp = current_time_ms()
+        self.speed_test:  Dict[IPPort, List[int]] = dict()
 
     def reseter(self):
         for p in self.peer_list:
@@ -97,8 +99,14 @@ class TitfortatDownloadController(AbstractDownloadController):
 
         for peer in peers:
             if peer not in self.choked_by_peers:
+                speed: int
+                if peer in self.speed_test[peer] and len(self.speed_test[peer]) > 0:
+                    speed = int(sum(self.speed_test[peer])/len(self.speed_test[peer]))
+                    self.speed_test.clear()
+                else:
+                    speed = self.controller.controller.get_peer_conn(peer).traffic_monitor.get_downlink_rate()
                 aval_peers.append(
-                    (peer, self.controller.controller.get_peer_conn(peer).traffic_monitor.get_downlink_rate()))
+                    (peer, speed))
 
         aval_peers.sort(key=lambda x: x[1], reverse=True)
 
@@ -147,11 +155,18 @@ class TitfortatDownloadController(AbstractDownloadController):
 
         # print("time = ", current_time_ms() - self.last_time)
 
-        if (current_time_ms() - self.last_time >= 10000):
+        if (current_time_ms() - self.last_time >= 8000):
             self.evaluate()
             self.last_time = current_time_ms()
             self.times += 1
             pass
+
+        if (current_time_ms() - self.stamp >= 1000):
+            for peer in all_peers:
+                if peer not in self.speed_test:
+                    self.speed_test[peer] = []
+                self.speed_test[peer].append(self.controller.controller.get_peer_conn(peer).traffic_monitor.get_downlink_rate())
+            self.stamp = current_time_ms()
 
         if (self.times >= 3):
             self.optimistic_unchoke()
@@ -161,6 +176,7 @@ class TitfortatDownloadController(AbstractDownloadController):
         peers = [peer for peer in all_peers if peer not in self.choked_by_peers]
 
         tasks = list()
+        start_time = current_time_ms()
         for peer in peers:
             if peer not in self.pending_peer:
                 self.on_new_peer(peer)
@@ -169,6 +185,7 @@ class TitfortatDownloadController(AbstractDownloadController):
             if len(self.pending_peer[peer]) >= self.peer_sim_numbers[peer]:
                 continue
             want_chunks = wanted.intersection(self.peer_chunk_info[peer].chunks).difference(self.pending_blocks)
+
             if len(want_chunks) == 0:
                 continue
             wants = list()
@@ -182,8 +199,15 @@ class TitfortatDownloadController(AbstractDownloadController):
                 self.pending_blocks.add(want_chunk_id)
                 self.pending_peer[peer].add(want_chunk_id)
             tasks.append((peer, wants))
+
+            #print("n%s peer_chunk_info = %s want_chunks = %s wants = %s pending = %s\n" % (
+            #peer, self.peer_chunk_info[peer].chunks, list(want_chunks), list(wants), self.pending_peer[peer]))
+
         if tasks:
-            print(tasks)
+            # for task in tasks:
+            #     _, w = task
+            #     l += len(w)
+            print("tasks ", tasks)
         return tasks
 
     def on_new_peer(self, peer_addr: IPPort):
