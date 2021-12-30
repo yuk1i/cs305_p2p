@@ -186,12 +186,13 @@ class P2PConn(Conn):
                 self.controller.active_torrents[torrent_hash].on_chunk_timeout(self.remote_addr, block_seq)
 
     def close(self):
+        self.active = False
         self.remote_keep_alive_timer.cancel()
         super(P2PConn, self).close()
 
     def check_alive(self):
-        print(f'check {self.remote_keep_alive} {self.remote_keep_alive_signal}')
         if self.active:
+            print(f'check {self.remote_keep_alive} {self.remote_keep_alive_signal}')
             if self.remote_keep_alive and not self.remote_keep_alive_signal:
                 self.remote_keep_alive = False
                 print(f'peer {self.remote_addr} kept quiet for too long')
