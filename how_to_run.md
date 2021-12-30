@@ -13,14 +13,15 @@ Python 3.10.1
 ## How to Run in CommandLine
 
 1. Put test files into `test_files`
-2. Use path `test` as the working directory
-3. Launch tracker first, see [How to Run Tracker](#how-to-run-tracker).
-4. Run `python3 the_test.py` to start one test
-5. Your command line should look like this:
+2. Launch tracker first, see [How to Run Tracker](#how-to-run-tracker).
+3. Use path `test` as the working directory
+4. add project root directory into `PYTHONPATH`
+5. Run `python3 the_test.py` to start one test
+6. Your command line should look like this:
    
-    `yuk1@~/Desktop/cs305_p2p/test ➜ python3 ComplexTest.py`
+    `yuk1@~/Desktop/cs305_p2p/ ➜ cd test && PYTHONPATH=../ python3 ComplexTest.py`
 
-6. Only this method is tested in command line.
+7. Only this method is tested in command line.
 
 ## How to Run in PyCharm
 

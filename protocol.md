@@ -95,6 +95,7 @@ Types of Message:
 - Request torrent    : 0x30
 - Request chunk info : 0x31
 - Request chunk      : 0x32
+- Set choke status   : 0x41
 
 ### ACK Message
 
@@ -110,12 +111,13 @@ Types of Message:
 
 Type:8,F:1,S:1,Reserved:6,Identifier:16
 
+```
  0                   1                   2                   3  
  0 1 2 3 4 5 6 7 8 9 0 1 2 3 4 5 6 7 8 9 0 1 2 3 4 5 6 7 8 9 0 1
 +-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+
 |      Type     |F|S|  Reserved |           Identifier          |
 +-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+
-
+```
 
 - Type        : The Request Type
 - F           : Is a fragmentable packet, 0 for disabled default
@@ -135,6 +137,7 @@ If F bit is set, the remaining parts of the packet should be considered as a par
 
 Type:8,1:1,S:1,Reserved:6,Identifier:16,Start(bytes):32,Length:32,Total Length:32
 
+```
  0                   1                   2                   3  
  0 1 2 3 4 5 6 7 8 9 0 1 2 3 4 5 6 7 8 9 0 1 2 3 4 5 6 7 8 9 0 1
 +-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+
@@ -146,6 +149,7 @@ Type:8,1:1,S:1,Reserved:6,Identifier:16,Start(bytes):32,Length:32,Total Length:3
 +-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+
 |                          Total Length                         |
 +-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+
+```
 
 Start: The following data starts from data[`Start`].
 Length: The following data's length.
@@ -163,6 +167,7 @@ Notify the Tracker the existence of Peer, request for unique client uuid.
 
 0x05:8,Reserved:8,Identifier:16,IPv4Address:32,Port:16
 
+```
  0                   1                   2                   3  
  0 1 2 3 4 5 6 7 8 9 0 1 2 3 4 5 6 7 8 9 0 1 2 3 4 5 6 7 8 9 0 1
 +-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+
@@ -172,6 +177,7 @@ Notify the Tracker the existence of Peer, request for unique client uuid.
 +-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+
 |            UDPPort            |
 +-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+
+```
 
 `IPv4Address`: Client ipv4 address.
 
@@ -181,6 +187,7 @@ Notify the Tracker the existence of Peer, request for unique client uuid.
 
 0x20:8,0x05:8,Identifier:16,UUID:64
 
+```
  0                   1                   2                   3  
  0 1 2 3 4 5 6 7 8 9 0 1 2 3 4 5 6 7 8 9 0 1 2 3 4 5 6 7 8 9 0 1
 +-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+
@@ -190,6 +197,7 @@ Notify the Tracker the existence of Peer, request for unique client uuid.
 +                              UUID                             +
 |                                                               |
 +-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+
+```
 
 `UUID`: uuid for the corresponding client.
 
@@ -197,6 +205,7 @@ Notify the Tracker the existence of Peer, request for unique client uuid.
 
 0x10:8,Reserved:8,Identifier:16,UUID:64,SHA256:256
 
+```
  0                   1                   2                   3  
  0 1 2 3 4 5 6 7 8 9 0 1 2 3 4 5 6 7 8 9 0 1 2 3 4 5 6 7 8 9 0 1
 +-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+
@@ -222,11 +231,13 @@ Notify the Tracker the existence of Peer, request for unique client uuid.
 +                                                               +
 |                                                               |
 +-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+
+```
 
 #### ACK for Register 0x10
 
 0x20:8,0x10:8,Identifier:16,status:8
 
+```
  0                   1                   2                   3  
  0 1 2 3 4 5 6 7 8 9 0 1 2 3 4 5 6 7 8 9 0 1 2 3 4 5 6 7 8 9 0 1
 +-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+
@@ -234,11 +245,13 @@ Notify the Tracker the existence of Peer, request for unique client uuid.
 +-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+
 |     status    |
 +-+-+-+-+-+-+-+-+
+```
 
 #### Request Peers (no auth) 0x11
 
 0x11:8,Reserved:8,Identifier:16,SHA256:256
 
+```
  0                   1                   2                   3  
  0 1 2 3 4 5 6 7 8 9 0 1 2 3 4 5 6 7 8 9 0 1 2 3 4 5 6 7 8 9 0 1
 +-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+
@@ -260,6 +273,7 @@ Notify the Tracker the existence of Peer, request for unique client uuid.
 +                                                               +
 |                                                               |
 +-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+
+```
 
 #### ACK for Request Peers 0x11
 
@@ -267,6 +281,7 @@ Re-assemble Packet enabled
 
 0x20:8,1:1,0:1,0x11:6,Identifier:16,Re-assemble Header:96,IPv4 Address:32,UDP Port:16,...:32,...:16
 
+```
  0                   1                   2                   3  
  0 1 2 3 4 5 6 7 8 9 0 1 2 3 4 5 6 7 8 9 0 1 2 3 4 5 6 7 8 9 0 1
 +-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+
@@ -284,11 +299,13 @@ Re-assemble Packet enabled
 +-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+
 |                               |              ...              |
 +-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+
+```
 
 #### Cancel 0x12
 
 0x12:8,Reserved:8,Identifier:16,UUID:64,Torrent Hash:256
 
+```
  0                   1                   2                   3  
  0 1 2 3 4 5 6 7 8 9 0 1 2 3 4 5 6 7 8 9 0 1 2 3 4 5 6 7 8 9 0 1
 +-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+
@@ -314,21 +331,25 @@ Re-assemble Packet enabled
 +                                                               +
 |                                                               |
 +-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+
+```
 
 #### ACK for Cancel 0x12
 
 0x20:8,0x12:8,Identifier:16
 
+```
  0                   1                   2                   3  
  0 1 2 3 4 5 6 7 8 9 0 1 2 3 4 5 6 7 8 9 0 1 2 3 4 5 6 7 8 9 0 1
 +-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+
 |      0x20     |      0x12     |           Identifier          |
 +-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+
+```
 
 #### Close 0x13
 
 0x12:8,Reserved:8,Identifier:16,UUID:64
 
+```
  0                   1                   2                   3  
  0 1 2 3 4 5 6 7 8 9 0 1 2 3 4 5 6 7 8 9 0 1 2 3 4 5 6 7 8 9 0 1
 +-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+
@@ -338,16 +359,19 @@ Re-assemble Packet enabled
 +                              UUID                             +
 |                                                               |
 +-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+
+```
 
 #### ACK for Close 0x13
 
 0x20:8,0x13:8,Identifier:16
 
+```
  0                   1                   2                   3  
  0 1 2 3 4 5 6 7 8 9 0 1 2 3 4 5 6 7 8 9 0 1 2 3 4 5 6 7 8 9 0 1
 +-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+
 |      0x20     |      0x13     |           Identifier          |
 +-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+
+```
 
 ### Peer to Peer
 
@@ -355,6 +379,7 @@ Re-assemble Packet enabled
 
 0x30:8,Reserved:8,Identifier:16,Torrent Hash:256,Since:32,ExpectedLength:32
 
+```
  0                   1                   2                   3  
  0 1 2 3 4 5 6 7 8 9 0 1 2 3 4 5 6 7 8 9 0 1 2 3 4 5 6 7 8 9 0 1
 +-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+
@@ -380,6 +405,7 @@ Re-assemble Packet enabled
 +-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+
 |                         ExpectedLength                        |
 +-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+
+```
 
 Since bytes of torrent file
 Expected Length : 0xFFFFFFFF for the whole torrent
@@ -390,6 +416,7 @@ Re-assemble Header enabled
 
 0x20:8,1:1,S:1,0x30:6,Identifier:16,Re-assemble Header:96,status:32,Re-assembled Data:64
 
+```
  0                   1                   2                   3  
  0 1 2 3 4 5 6 7 8 9 0 1 2 3 4 5 6 7 8 9 0 1 2 3 4 5 6 7 8 9 0 1
 +-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+
@@ -407,7 +434,7 @@ Re-assemble Header enabled
 +                       Re-assembled Data                       +
 |                                                               |
 +-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+
-
+```
 
 If Total-Length in Re-assemble Header is 0, asked peer doesn't have this file information
 
@@ -417,6 +444,7 @@ Ask Peer which chunks it has
 
 0x31:8,Reserved:8,Identifier:16,Re-assemble Header:96,Torrent Hash:256,Seq IDs:32,...:32
 
+```
  0                   1                   2                   3  
  0 1 2 3 4 5 6 7 8 9 0 1 2 3 4 5 6 7 8 9 0 1 2 3 4 5 6 7 8 9 0 1
 +-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+
@@ -448,6 +476,7 @@ Ask Peer which chunks it has
 +-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+
 |                              ...                              |
 +-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+
+```
 
 #### ACK Request chunk info 0x31
 
@@ -455,6 +484,7 @@ Re-assemble Header enabled
 
 0x20:8,0x31:8,Identifier:16,Re-assemble Header:96,status:32,Seq ID:32,...:32
 
+```
  0                   1                   2                   3  
  0 1 2 3 4 5 6 7 8 9 0 1 2 3 4 5 6 7 8 9 0 1 2 3 4 5 6 7 8 9 0 1
 +-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+
@@ -472,21 +502,25 @@ Re-assemble Header enabled
 +-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+
 |                              ...                              |
 +-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+
+```
 
 Seq ID:
 
 Range:1,File:1,Seq ID:30
 
+```
  0                   1                   2                   3  
  0 1 2 3 4 5 6 7 8 9 0 1 2 3 4 5 6 7 8 9 0 1 2 3 4 5 6 7 8 9 0 1
 +-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+
 |R|F|                           Seq ID                          |
 +-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+
+```
 
 - When R flag is set: two "Seq ID"s are interpreted together:
 
 1:1,File:1,Seq ID Start:30,1:1,File:1,Seq ID End:30
 
+```
  0                   1                   2                   3  
  0 1 2 3 4 5 6 7 8 9 0 1 2 3 4 5 6 7 8 9 0 1 2 3 4 5 6 7 8 9 0 1
 +-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+
@@ -494,6 +528,7 @@ Range:1,File:1,Seq ID:30
 +-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+
 |1|F|                         Seq ID End                        |
 +-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+
+```
 
 both start and end are included, Seq ID Start <= id <= Seq ID End
 
@@ -507,6 +542,7 @@ Ask chunk data
 
 0x32:8,Reserved:8,Identifier:16,Torrent Hash:256,Chunk SeqID:32,Start Byte:32,Expected End Byte:32
 
+```
  0                   1                   2                   3  
  0 1 2 3 4 5 6 7 8 9 0 1 2 3 4 5 6 7 8 9 0 1 2 3 4 5 6 7 8 9 0 1
 +-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+
@@ -534,6 +570,7 @@ Ask chunk data
 +-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+
 |                       Expected End Byte                       |
 +-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+
+```
 
 #### ACK for Request Chunk 0x32
 
@@ -541,6 +578,7 @@ Re-assemble Header enabled
 
 0x20:8,1:1,S:1,0x32:6,Identifier:16,Re-assemble Header:96,status:32,data(variable length):64
 
+```
  0                   1                   2                   3  
  0 1 2 3 4 5 6 7 8 9 0 1 2 3 4 5 6 7 8 9 0 1 2 3 4 5 6 7 8 9 0 1
 +-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+
@@ -558,5 +596,36 @@ Re-assemble Header enabled
 +                     data(variable length)                     +
 |                                                               |
 +-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+
+```
 
+#### Set Choke Status
 
+0x41:8,Reserved:8,Identifier:16,Torrent Hash:256,Choke Status:8
+
+```
+ 0                   1                   2                   3  
+ 0 1 2 3 4 5 6 7 8 9 0 1 2 3 4 5 6 7 8 9 0 1 2 3 4 5 6 7 8 9 0 1
++-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+
+|      0x41     |    Reserved   |           Identifier          |
++-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+
+|                                                               |
++                                                               +
+|                                                               |
++                                                               +
+|                                                               |
++                                                               +
+|                                                               |
++                          Torrent Hash                         +
+|                                                               |
++                                                               +
+|                                                               |
++                                                               +
+|                                                               |
++                                                               +
+|                                                               |
++-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+
+|                          Chunk SeqID                          |
++-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+
+|  Choke Status |
++-+-+-+-+-+-+-+-+
+```
