@@ -22,7 +22,7 @@ def client_download(client):
 if __name__ == '__main__':
     # A, B, C, D, E join the network
     # 理论最小时间： 20*1024*1024 / 500000 = 40 s
-    # 150 * 1024 / 5000 = 30.7 real: 38ms
+    # 150 * 1024 / 5000 = 30.7 real: 38s
     A = PClient(tracker_address, upload_rate=5000, download_rate=100000)
     B = PClient(tracker_address, upload_rate=500000, download_rate=100000)
     C = PClient(tracker_address, upload_rate=500000, download_rate=100000)

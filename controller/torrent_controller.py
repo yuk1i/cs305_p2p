@@ -195,6 +195,8 @@ class TorrentController:
         print("[TC] peer (%s:%s) chunk info updated" % peer)
         if peer not in self.peer_chunk_info:
             self.on_new_income_peer(peer)
+        if peer not in self.peer_chunk_info:
+            self.peer_chunk_info[peer] = controller.RemoteChunkInfo(self.slow_mode)
         self.peer_chunk_info[peer].update(chunk_info)
         pass
 
